@@ -35,6 +35,13 @@ Object::Object(float f){
 	Object::object_list.insert_after(this);
 }
 
+Object::Object(Closure *c){
+	type = CLOSURE;
+	closure = c;
+
+	Object::object_list.insert_after(this);
+}
+
 Object::~Object(){
 	if(!this->active){
 		//std::cout << "deleting: ";
@@ -45,6 +52,9 @@ Object::~Object(){
 				break;
 			case VECTOR:
 				delete this->vec;
+				break;
+			case CLOSURE:
+				delete this->closure;
 				break;
 		}
 	}
@@ -174,6 +184,9 @@ void Object::show(void){
 		case UNIT:
 			std::cout << "UNIT" << std::endl;
 			break;
+		case CLOSURE:
+			std::cout << "CLOSURE" << std::endl;
+			break;
 	}
 }
 
@@ -234,4 +247,21 @@ Object * gte(Object *a, Object *b){
 	if(a->type == INT && b->type == INT) return new Object(a->i >= b->i);
 	if(a->type == FLOAT && b->type == FLOAT) return new Object(a->f >= b->f);
 	return new Object();
+}
+
+
+/////////////////////////////////////////////////////
+// Closure stuff.
+/////////////////////////////////////////////////////
+
+Closure::Closure(int f_ptr){
+	this->func_ptr = f_ptr;
+}
+
+Closure::Closure(int f_ptr, std::vector<Object *> &env){
+	this->func_ptr = f_ptr;
+	
+	for(auto o : env){
+		this->env.push_back(o);
+	}
 }

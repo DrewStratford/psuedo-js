@@ -7,7 +7,9 @@
 #include <iterator>
 
 
-enum ObjType {INT, FLOAT, OBJECT, VECTOR, UNIT};
+class Closure;
+
+enum ObjType {INT, FLOAT, OBJECT, VECTOR, UNIT, CLOSURE};
 class Object{
 
 	private:
@@ -35,6 +37,7 @@ class Object{
 		float f;
 		std::map<std::string, Object *> *obj;
 		std::vector<Object *> *vec;
+		Closure *closure;
 	};
 
 	public:
@@ -42,6 +45,7 @@ class Object{
 	Object(int i);
 	Object(float f);
 	Object(ObjType t);
+	Object(Closure *c);
 	~Object();
 
 	bool equals(Object *o);
@@ -71,6 +75,16 @@ class Object{
 	friend Object * gt(Object *, Object *);
 	friend Object * gte(Object *, Object *);
 
+};
+
+
+class Closure{
+	private:
+	std::vector<Object *> env;
+	int func_ptr;
+	public:
+	Closure(int f_ptr);
+	Closure(int func, std::vector<Object *> &env);
 };
 
 
