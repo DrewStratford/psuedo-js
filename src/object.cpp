@@ -267,5 +267,5 @@ Closure::Closure(int f_ptr, std::vector<Object *> &env){
 }
 
 int Closure::get_func(void){
-	return func_ptr
+	return func_ptr;
 }
