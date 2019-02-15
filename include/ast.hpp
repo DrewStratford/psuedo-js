@@ -44,7 +44,21 @@ class VarExp : public Expression{
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 };
 
-enum BinOp {ADD_OP, MIN_OP, MUL_OP, DIV_OP, EQ_OP, LT_OP, LTE_OP, GT_OP, GTE_OP};
+class BlockStmt;
+class ClosureExp : public Expression{
+	private:
+	std::string name;
+	std::vector<std::string> arguments;
+	BlockStmt *body;
+
+	public:
+	ClosureExp(std::string, std::initializer_list<std::string>, BlockStmt *);
+	ClosureExp(std::string, std::vector<std::string>, BlockStmt *);
+	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
+};
+
+enum BinOp 
+	{ADD_OP, MIN_OP, MUL_OP, DIV_OP, EQ_OP, LT_OP, LTE_OP, GT_OP, GTE_OP};
 class BinExp : public Expression{
 	private:
 	enum BinOp op;
@@ -81,7 +95,8 @@ class GetFieldExp : public Expression{
 
 class Statement{
 	public:
-	virtual void emit(std::map<std::string, int> &,std::vector<Instruction> &) = 0;
+	virtual
+	void emit(std::map<std::string, int> &,std::vector<Instruction> &) = 0;
 	virtual void find_DeclareStmts(std::vector<std::string>&){
 	}
 	virtual bool is_DeclareStmt(void){
