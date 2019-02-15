@@ -6,7 +6,8 @@ IntExp::IntExp(int i){
 	this->i = i;
 }
 
-void IntExp::emit(std::map<std::string, int> &context, std::vector<Instruction> &is){
+void IntExp::emit(std::map<std::string, int> &context,
+				  std::vector<Instruction> &is){
 	is.push_back(load_imm_i(this->i));
 }
 
@@ -14,14 +15,16 @@ FloatExp::FloatExp(float f){
 	this->f = f;
 }
 
-void FloatExp::emit(std::map<std::string, int> &context, std::vector<Instruction> &is){
+void FloatExp::emit(std::map<std::string, int> &context, 
+					std::vector<Instruction> &is){
 	is.push_back(load_imm_f(this->f));
 }
 
 ObjectExp::ObjectExp(){
 }
 
-void ObjectExp::emit(std::map<std::string, int> &context, std::vector<Instruction> &is){
+void ObjectExp::emit(std::map<std::string, int> &context,
+					 std::vector<Instruction> &is){
 	is.push_back( new_obj() );
 }
 
@@ -29,7 +32,8 @@ VarExp::VarExp(char *s){
 	this->var = s;
 }
 
-void VarExp::emit(std::map<std::string, int> &context, std::vector<Instruction> &is){
+void VarExp::emit(std::map<std::string, int> &context,
+				  std::vector<Instruction> &is){
 	if(context.count(this->var) != 0){
 		int &stack_pos = context.at(this->var);
 		is.push_back(load_stk(stack_pos));
@@ -46,7 +50,9 @@ BinExp::BinExp(enum BinOp op, Expression *l, Expression *r){
 	this->right = r;
 }
 
-void BinExp::emit(std::map<std::string, int> &context, std::vector<Instruction> &is){
+void BinExp::emit(std::map<std::string, int> &context,
+				  std::vector<Instruction> &is){
+
 	left->emit(context, is);
 	right->emit(context, is);
 
@@ -97,7 +103,8 @@ CallExp::CallExp(std::string name, std::vector<Expression *> args){
 	}
 }
 
-void CallExp::emit(std::map<std::string, int> &context, std::vector<Instruction> &is){
+void CallExp::emit(std::map<std::string, int> &context,
+				   std::vector<Instruction> &is){
 	
 	for(auto a : arguments){
 		a->emit(context, is);
@@ -111,7 +118,8 @@ GetFieldExp::GetFieldExp(std::string field, Expression *exp){
 	this->expression = exp;
 }
 
-void GetFieldExp::emit(std::map<std::string, int> &context, std::vector<Instruction> &is){
+void GetFieldExp::emit(std::map<std::string, int> &context,
+					   std::vector<Instruction> &is){
 	expression->emit(context, is);
 	is.push_back( lookup_s( strdup(field.c_str())) );
 }
@@ -126,7 +134,8 @@ ReturnStmt::ReturnStmt(Expression *exp){
 	this->exp = exp;
 }
 
-void ReturnStmt::emit(std::map<std::string, int> &context, std::vector<Instruction> &is){
+void ReturnStmt::emit(std::map<std::string, int> &context,
+					  std::vector<Instruction> &is){
 	this->exp->emit(context, is);
 	is.push_back( ret() );
 }
@@ -144,7 +153,8 @@ void DeclareStmt::find_DeclareStmts(std::vector<std::string> &context){
 	context.push_back(this->var);
 }
 
-void DeclareStmt::emit(std::map<std::string, int> &context, std::vector<Instruction> &is){
+void DeclareStmt::emit(std::map<std::string, int> &context,
+					   std::vector<Instruction> &is){
 	/*
 	 * When emitting, this just turns into a AssignStmt without the oppurtunity
 	 * for the variable to be global
@@ -161,7 +171,8 @@ AssignStmt::AssignStmt(Expression *exp, char *var){
 	this->var = var;
 }
 
-void AssignStmt::emit(std::map<std::string, int> &context, std::vector<Instruction> &is){
+void AssignStmt::emit(std::map<std::string, int> &context,
+					  std::vector<Instruction> &is){
 	this->exp->emit(context, is);
 	if(context.count(this->var) != 0){
 		int &stack_pos = context.at(this->var);
@@ -191,7 +202,8 @@ void BlockStmt::find_DeclareStmts(std::vector<std::string> &context){
 	}
 }
 
-void BlockStmt::emit(std::map<std::string, int> &context, std::vector<Instruction> &is){
+void BlockStmt::emit(std::map<std::string, int> &context,
+					 std::vector<Instruction> &is){
 	for(auto stmt : this->statements){
 		stmt->emit(context, is);
 	}
@@ -214,7 +226,8 @@ void IfStmt::find_DeclareStmts(std::vector<std::string> &context){
 	this->_else->find_DeclareStmts(context);
 }
 
-void IfStmt::emit(std::map<std::string, int> &context, std::vector<Instruction> &is){
+void IfStmt::emit(std::map<std::string, int> &context,
+				  std::vector<Instruction> &is){
 	/*
 	 * We need to know the size of the body so
 	 * that we can jmp over it.
@@ -251,7 +264,8 @@ void WhileStmt::find_DeclareStmts(std::vector<std::string> &context){
 	this->body->find_DeclareStmts(context);
 }
 
-void WhileStmt::emit(std::map<std::string, int> &context, std::vector<Instruction> &is){
+void WhileStmt::emit(std::map<std::string, int> &context,
+					 std::vector<Instruction> &is){
 	auto cnd_is = std::vector<Instruction>();
 	auto body_is = std::vector<Instruction>();
 
@@ -298,7 +312,8 @@ FunctionStmt::FunctionStmt(
 	this->body = body;
 }
 
-void FunctionStmt::emit(std::map<std::string, int> &context, std::vector<Instruction> &is){
+void FunctionStmt::emit(std::map<std::string, int> &context,
+						std::vector<Instruction> &is){
 	
 	/*
 	 * First we need to make a new context containing the
@@ -335,13 +350,16 @@ void FunctionStmt::emit(std::map<std::string, int> &context, std::vector<Instruc
 	}
 }
 
-SetFieldStmt::SetFieldStmt(std::string field, Expression *obj, Expression *exp){
+SetFieldStmt::SetFieldStmt(std::string field,
+						   Expression *obj,
+						   Expression *exp){
 	this->field = field;
 	this->object = obj;
 	this->expression = exp;
 }
 
-void SetFieldStmt::emit(std::map<std::string, int> &context, std::vector<Instruction> &is){
+void SetFieldStmt::emit(std::map<std::string, int> &context,
+						std::vector<Instruction> &is){
 	expression->emit(context, is);
 	object->emit(context, is);
 	is.push_back( insert_s( strdup(field.c_str())) );
