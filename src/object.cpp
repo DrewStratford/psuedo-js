@@ -265,3 +265,7 @@ Closure::Closure(int f_ptr, std::vector<Object *> &env){
 		this->env.push_back(o);
 	}
 }
+
+int Closure::get_func(void){
+	return func_ptr
+}

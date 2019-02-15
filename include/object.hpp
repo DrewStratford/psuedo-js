@@ -85,6 +85,7 @@ class Closure{
 	public:
 	Closure(int f_ptr);
 	Closure(int func, std::vector<Object *> &env);
+	int get_func(void);
 };
 
 
