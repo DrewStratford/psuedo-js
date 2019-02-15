@@ -60,6 +60,10 @@ Object::~Object(){
 	}
 }
 
+enum ObjType Object::get_type(void){
+	return type;
+}
+
 bool Object::equals(Object *o){
 	if(o == nullptr || this->type != o->type) return false;
 
@@ -94,6 +98,7 @@ void gc_sweep_vector(std::vector<Object*> *v){
 		}
 	}
 }
+
 void gc_sweep_map(std::map<std::string, Object*> *m){
 	auto& map = *m;
 	for(auto p : map){

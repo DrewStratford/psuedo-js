@@ -49,6 +49,7 @@ class Object{
 	~Object();
 
 	bool equals(Object *o);
+	enum ObjType get_type(void);
 
 	void show(void);
 
