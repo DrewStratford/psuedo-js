@@ -34,12 +34,31 @@ void step_instruction(Context * ctxt,
 			if(a->equals(b)) step = i.i;
 			}
 			break;
-
+		case JMP_CLOS:
+			// Pops a closure from the stack
+			// then jmps and links
+			{
+			Object *c = ctxt->pop();
+			if(c->get_type() == CLOSURE){
+				ctxt->link((*ip) + 1);
+				//convert absolute to relative
+				//address;
+				int addr = c->get_closure()->get_func();
+				step = addr - (*ip);
+			}
+			}
+			break;
 		case NEW_OBJ:
 			ctxt->push(new Object(OBJECT));
 			break;
 		case NEW_VEC:
 			ctxt->push(new Object(VECTOR));
+			break;
+		case NEW_CLOS:
+			{
+			Closure *c = new Closure(i.i);
+			ctxt->push(new Object(c));
+			}
 			break;
 
 		case LOAD_IMM_F:
@@ -186,6 +205,12 @@ Instruction jmp_lbl(char *c){
 	return out;
 }
 
+Instruction jmp_closure(void){
+	Instruction out;
+	out.op = JMP_CLOS;
+	return out;
+}
+
 Instruction label(char *c){
 	Instruction out;
 	out.op = LABEL;
@@ -198,6 +223,17 @@ Instruction new_obj(void){
 }
 Instruction new_vec(void){
 	return {.op = NEW_VEC};
+}
+
+Instruction new_closure(int ip){
+	Instruction out;
+	out.op = NEW_CLOS;
+	out.i = ip;
+	return out;
+}
+
+Instruction call_closure(void){
+	return {.op = JMP_CLOS};
 }
 
 Instruction load_imm_f(float f){

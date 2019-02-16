@@ -25,8 +25,6 @@ class Object{
 	void insert_after(Object *o);
 	void remove(void);
 
-
-
 	/*
 	 *
 	 */
@@ -50,6 +48,7 @@ class Object{
 
 	bool equals(Object *o);
 	enum ObjType get_type(void);
+	Closure *get_closure(void);
 
 	void show(void);
 

@@ -240,6 +240,26 @@ bool parse_commasep_ident(ParseInfo *p, std::vector<std::string> *ids){
 	return true;
 }
 
+Expression * parse_closcall(ParseInfo *p){
+	ParseInfo working = *p;
+	Expression *clos = nullptr;
+	std::vector<Expression *> args;
+
+	if( working.match("call") &&
+	  	working.match("[") &&
+		(clos = parse_Expression(&working)) &&
+	  	working.match("]") &&
+	  	working.match("(") &&
+		parse_commasep_expr(&working, &args) &&
+	  	working.match(")")
+	){
+		*p = working;
+		return new ClosureCallExp(clos, args);
+	}
+
+	return nullptr;
+}
+
 Expression * parse_funcall(ParseInfo *p){
 	ParseInfo working = *p;
 	std::string id;
@@ -309,9 +329,33 @@ Expression * parse_object(ParseInfo *p){
 	return nullptr;
 }
 
+BlockStmt *parse_block(ParseInfo *p);
+
+Expression *parse_closure(ParseInfo *p){
+	ParseInfo working = *p;
+	std::string id;
+	std::vector<std::string> args;
+	BlockStmt *body;
+
+	//arguments not working at the moment
+	if(working.match("closure") &&
+	   working.match("(") && 
+	   parse_commasep_ident(&working, &args) &&
+	   working.match(")") && 
+	   (body = parse_block(&working))
+	  ){
+	  	*p = working;
+		return new ClosureExp(args, body);
+	}
+
+	return nullptr;
+}
+
 Expression * parse_expr0(ParseInfo *p){
 	Expression *out = nullptr;
 	if( out = parse_parens(p)) return out;
+	else if( out = parse_closcall(p)) return out;
+	else if( out = parse_closure(p)) return out;
 	else if( out = parse_funcall(p)) return out;
 	else if( out = parse_int(p)) return out;
 	else if( out = parse_var(p)) return out;
@@ -434,7 +478,7 @@ BlockStmt *parse_block(ParseInfo *p){
 			stmts.push_back(stmt);
 			i++;
 		}
-		putchar('\n');
+		//putchar('\n');
 
 		if(working.match("}")){
 			*p = working;
@@ -516,6 +560,19 @@ Statement *parse_statement(ParseInfo *p){
 	return nullptr;
 }
 
+/*
+ * Creates closures for all the top level functions
+ */
+void create_closures(std::vector<Instruction> &ins, Object *globals){
+
+	// scan for label addresses
+	for(int ins_ptr = 0; ins_ptr < ins.size(); ins_ptr++){
+		Instruction instr = ins[ins_ptr];
+		if(instr.op == LABEL){
+			globals->set(instr.str, new Object(new Closure(ins_ptr)));
+		}
+	}
+}
 
 int main(int argc, char **argv){
 	if(argc < 2) return 0;
@@ -544,9 +601,10 @@ int main(int argc, char **argv){
 	is.push_back( show_frame());
 
 
+	auto globals = new Object(OBJECT);
+	create_closures(is, globals);
 	process_labels(is);
 
-	auto globals = new Object(OBJECT);
 	for(int ip = 0; ip >= 0 && ip < is.size(); ){
 		auto i = is[ip];
 		step_instruction(&ctx, i, &ip, globals);

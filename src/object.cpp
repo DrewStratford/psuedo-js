@@ -64,6 +64,10 @@ enum ObjType Object::get_type(void){
 	return type;
 }
 
+Closure *Object::get_closure(void){
+	return closure;
+}
+
 bool Object::equals(Object *o){
 	if(o == nullptr || this->type != o->type) return false;
 

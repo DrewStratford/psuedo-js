@@ -47,13 +47,12 @@ class VarExp : public Expression{
 class BlockStmt;
 class ClosureExp : public Expression{
 	private:
-	std::string name;
 	std::vector<std::string> arguments;
 	BlockStmt *body;
 
 	public:
-	ClosureExp(std::string, std::initializer_list<std::string>, BlockStmt *);
-	ClosureExp(std::string, std::vector<std::string>, BlockStmt *);
+	ClosureExp(std::initializer_list<std::string>, BlockStmt *);
+	ClosureExp(std::vector<std::string>, BlockStmt *);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 };
 
@@ -79,6 +78,17 @@ class CallExp : public Expression{
 	public:
 	CallExp(std::string, std::initializer_list<Expression *>);
 	CallExp(std::string, std::vector<Expression *>);
+	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
+};
+
+class ClosureCallExp : public Expression{
+	private:
+	Expression *closure;
+	std::vector<Expression *> arguments;
+
+	public:
+	ClosureCallExp(Expression *exp, std::initializer_list<Expression *>);
+	ClosureCallExp(Expression *exp, std::vector<Expression *>);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 };
 

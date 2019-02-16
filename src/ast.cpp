@@ -113,6 +113,39 @@ void CallExp::emit(std::map<std::string, int> &context,
 	is.push_back( jmp_lbl( strdup(name.c_str()) ) );
 }
 
+ClosureCallExp::ClosureCallExp(
+	Expression *exp,
+	std::initializer_list<Expression *> args
+	){
+	this->closure = exp;
+	for(auto a : args){
+		this->arguments.push_back(a);
+	}
+}
+
+ClosureCallExp::ClosureCallExp(
+				Expression *exp,
+				std::vector<Expression *> args
+				){
+	this->closure = exp;
+	for(auto a : args){
+		this->arguments.push_back(a);
+	}
+}
+
+void ClosureCallExp::emit(
+			std::map<std::string, int> &context,
+			std::vector<Instruction> &is
+			){
+	
+	for(auto a : arguments){
+		a->emit(context, is);
+	}
+	closure->emit(context, is);
+	is.push_back( push_frame(arguments.size()+1) );
+	is.push_back( jmp_closure() );
+}
+
 GetFieldExp::GetFieldExp(std::string field, Expression *exp){
 	this->field = field;
 	this->expression = exp;
@@ -124,6 +157,80 @@ void GetFieldExp::emit(std::map<std::string, int> &context,
 	is.push_back( lookup_s( strdup(field.c_str())) );
 }
 
+ClosureExp::ClosureExp(
+				std::vector<std::string> args,
+				BlockStmt *body){
+
+	for(auto arg : args){
+		arguments.push_back(arg);
+	}
+	this->body = body;
+}
+
+ClosureExp::ClosureExp(
+				std::initializer_list<std::string> args,
+				BlockStmt *body){
+
+	for(auto arg : args){
+		arguments.push_back(arg);
+	}
+	this->body = body;
+}
+
+void ClosureExp::emit(std::map<std::string, int> &context,
+						std::vector<Instruction> &is){
+	
+	/*
+	 * TODO: some semantic analysis to detect captured
+	 * variables.
+	 */
+
+	/*
+	 * Set up the closure creation
+	 * we compile the actual closure
+	 * just after the closure create
+	 *
+	 * instr
+	 * 		new_closure
+	 * 		jmp over closure
+	 * 		closure_start (label)
+	 */
+	int clos_addr_abs = is.size()+2;
+	is.push_back( new_closure(clos_addr_abs) );
+	/*
+	 * Now we need to make a new context containing the
+	 * args and local variables stack locations.
+	 */
+
+	auto func_context = std::map<std::string, int>();
+	int stack_pos = 0;
+	for(auto arg : arguments){
+		func_context[arg] = stack_pos;
+		stack_pos++;
+	}
+
+	auto locals = std::vector<std::string>();
+	body->find_DeclareStmts(locals);
+	for(auto var : locals){
+		func_context[var] = stack_pos;
+		stack_pos++;
+	}
+	
+	auto function_is = std::vector<Instruction>();
+	function_is.push_back( label("anon_function") ); // push label
+	//push space on stack for local variables
+	for(auto _ : locals){
+		function_is.push_back( new_obj() ); // push label
+	}
+
+	body->emit(func_context, function_is);
+
+	is.push_back( jmp( function_is.size()+1 ) ); // jump over function body
+
+	for( auto instr : function_is){
+		is.push_back(instr);
+	}
+}
 
 
 /*

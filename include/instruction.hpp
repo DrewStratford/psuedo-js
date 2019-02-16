@@ -18,9 +18,11 @@ enum OpCode{
 	JMP_LNK,
 	JMP_LBL, // transformed to JMP during preprocessing
 	JMP,
+	JMP_CLOS,
 
 	NEW_OBJ,
 	NEW_VEC,
+	NEW_CLOS,
 
 	LOAD_IMM_F,
 	LOAD_IMM_I,
@@ -71,11 +73,13 @@ Instruction jmp_cnd(int);
 Instruction jmp_lnk(int);
 Instruction jmp(int);
 Instruction jmp_lbl(char *);
+Instruction jmp_closure(void);
 
 Instruction jmp(char *);
 
 Instruction new_obj(void);
 Instruction new_vec(void);
+Instruction new_closure(int);
 
 Instruction load_imm_f(float);
 Instruction load_imm_i(int);
