@@ -2,6 +2,9 @@
 #include <iostream>
 
 
+void Expression::get_variables(std::set<std::string> &vars){
+}
+
 IntExp::IntExp(int i){
 	this->i = i;
 }
@@ -41,6 +44,10 @@ void VarExp::emit(std::map<std::string, int> &context,
 		char* s = this->var;
 		is.push_back(load_glb(s));
 	}
+}
+
+void VarExp::get_variables(std::set<std::string> &vars){
+	vars.insert(var);
 }
 
 
@@ -89,6 +96,11 @@ void BinExp::emit(std::map<std::string, int> &context,
 	is.push_back(operation);
 }
 
+void BinExp::get_variables(std::set<std::string> &vars){
+	left->get_variables(vars);
+	right->get_variables(vars);
+}
+
 CallExp::CallExp(std::string name, std::initializer_list<Expression *> args){
 	this->name = name;
 	for(auto a : args){
@@ -111,6 +123,12 @@ void CallExp::emit(std::map<std::string, int> &context,
 	}
 	is.push_back( push_frame(arguments.size()) );
 	is.push_back( jmp_lbl( strdup(name.c_str()) ) );
+}
+
+void CallExp::get_variables(std::set<std::string> &vars){
+	for(auto arg : arguments){
+		arg->get_variables(vars);
+	}
 }
 
 ClosureCallExp::ClosureCallExp(
@@ -146,6 +164,13 @@ void ClosureCallExp::emit(
 	is.push_back( jmp_closure() );
 }
 
+void ClosureCallExp::get_variables(std::set<std::string> &vars){
+	closure->get_variables(vars);
+	for(auto arg : arguments){
+		arg->get_variables(vars);
+	}
+}
+
 GetFieldExp::GetFieldExp(std::string field, Expression *exp){
 	this->field = field;
 	this->expression = exp;
@@ -167,6 +192,10 @@ ClosureExp::ClosureExp(
 	this->body = body;
 }
 
+void GetFieldExp::get_variables(std::set<std::string> &vars){
+	expression->get_variables(vars);
+}
+
 ClosureExp::ClosureExp(
 				std::initializer_list<std::string> args,
 				BlockStmt *body){
@@ -177,13 +206,49 @@ ClosureExp::ClosureExp(
 	this->body = body;
 }
 
+
+void ClosureExp::get_variables(std::set<std::string> &vars){
+	body->get_variables(vars);
+}
+
 void ClosureExp::emit(std::map<std::string, int> &context,
 						std::vector<Instruction> &is){
 	
+
 	/*
-	 * TODO: some semantic analysis to detect captured
-	 * variables.
+	 * TODO: Because we use a temporary list of instructions
+	 * here, nested closure may have the wrong absolute address.
+	 *
+	 * Consider: why am I even using absolute addressing in the first
+	 * place? Answer: closures may be called from a variety of places.
+	 *
+	 * The only suitable solutions is to pass the offset to emit
+	 * (annoying to implement).
+	 * Or to add a new Closure label instruction which is changed
+	 * to absolute address during processing.
 	 */
+	/*
+	 * Captured variables are variables that are used,
+	 * but not defined in either the closure's scope or 
+	 * global scope. So a variable is captured when it
+	 * is used and also present in the outside context (&context).
+	 *
+	 * Solution store count of captured vars in closure.
+	 * Then process labels uses that number to create the absolute addr.
+	 */
+	std::set<std::string> used;
+	get_variables(used);
+	int captured = 0;
+
+	puts("captured variables:");
+	for(auto s : used){
+		if(context.count(s) > 0){
+			std::cout << s << std::endl;
+			captured++;
+		}
+	}
+	puts("=================");
+	printf("captured %d\n", captured);
 
 	/*
 	 * Set up the closure creation
@@ -192,14 +257,27 @@ void ClosureExp::emit(std::map<std::string, int> &context,
 	 *
 	 * instr
 	 * 		new_closure
+	 * 		capture vars [0 .. n]
 	 * 		jmp over closure
 	 * 		closure_start (label)
 	 */
-	int clos_addr_abs = is.size()+2;
-	is.push_back( new_closure(clos_addr_abs) );
+	int clos_addr_abs = is.size()+3+ captured; //TODO: consider 3
+	printf("captured %d\n", captured);
+
+	//is.push_back( new_closure(clos_addr_abs) );
+	is.push_back( new_closure(captured) );
+
+	for(auto s : used){
+		if(context.count(s) > 0){
+			int addr = context[s];
+			is.push_back( closure_capture(addr) );
+		}
+	}
 	/*
 	 * Now we need to make a new context containing the
 	 * args and local variables stack locations.
+	 *
+	 * Captured variables are added last.
 	 */
 
 	auto func_context = std::map<std::string, int>();
@@ -214,6 +292,15 @@ void ClosureExp::emit(std::map<std::string, int> &context,
 	for(auto var : locals){
 		func_context[var] = stack_pos;
 		stack_pos++;
+	}
+
+	// adding captured vars to context
+	for(auto s : used){
+		if(context.count(s) > 0){
+			int addr = context[s];
+			func_context[s] = stack_pos;
+			stack_pos++;
+		}
 	}
 	
 	auto function_is = std::vector<Instruction>();
@@ -237,6 +324,10 @@ void ClosureExp::emit(std::map<std::string, int> &context,
  * STATEMENTS
  */
 
+void Statement::get_variables(std::set<std::string> &vars){
+	//default: does nothing.
+}
+
 ReturnStmt::ReturnStmt(Expression *exp){
 	this->exp = exp;
 }
@@ -245,6 +336,10 @@ void ReturnStmt::emit(std::map<std::string, int> &context,
 					  std::vector<Instruction> &is){
 	this->exp->emit(context, is);
 	is.push_back( ret() );
+}
+
+void ReturnStmt::get_variables(std::set<std::string> &vars){
+	exp->get_variables(vars);
 }
 
 DeclareStmt::DeclareStmt(Expression *exp, char *var){
@@ -263,7 +358,7 @@ void DeclareStmt::find_DeclareStmts(std::vector<std::string> &context){
 void DeclareStmt::emit(std::map<std::string, int> &context,
 					   std::vector<Instruction> &is){
 	/*
-	 * When emitting, this just turns into a AssignStmt without the oppurtunity
+	 * When emitting, this just turns into a AssignStmt without the opportunity
 	 * for the variable to be global
 	 */
 	this->exp->emit(context, is);
@@ -271,6 +366,10 @@ void DeclareStmt::emit(std::map<std::string, int> &context,
 		int &stack_pos = context.at(this->var);
 		is.push_back(set_stk(stack_pos));
 	}
+}
+
+void DeclareStmt::get_variables(std::set<std::string> &vars){
+	exp->get_variables(vars);
 }
 
 AssignStmt::AssignStmt(Expression *exp, char *var){
@@ -289,6 +388,10 @@ void AssignStmt::emit(std::map<std::string, int> &context,
 		is.push_back(set_glb(s));
 		std::cout << "global assign\n";
 	}
+}
+
+void AssignStmt::get_variables(std::set<std::string> &vars){
+	exp->get_variables(vars);
 }
 
 BlockStmt::BlockStmt(std::vector<Statement *> inits){
@@ -313,6 +416,12 @@ void BlockStmt::emit(std::map<std::string, int> &context,
 					 std::vector<Instruction> &is){
 	for(auto stmt : this->statements){
 		stmt->emit(context, is);
+	}
+}
+
+void BlockStmt::get_variables(std::set<std::string> &vars){
+	for(auto stmt : statements){
+		stmt->get_variables(vars);
 	}
 }
 
@@ -362,6 +471,13 @@ void IfStmt::emit(std::map<std::string, int> &context,
 	}
 }
 
+void IfStmt::get_variables(std::set<std::string> &vars){
+	exp->get_variables(vars);
+	_if->get_variables(vars);
+	if(_else != nullptr) _else->get_variables(vars);
+}
+
+
 WhileStmt::WhileStmt(Expression *exp, BlockStmt *block){
 	this->exp = exp;
 	this->body = block;
@@ -393,6 +509,11 @@ void WhileStmt::emit(std::map<std::string, int> &context,
 	int total_size = 2 + cnd_is.size() + body_is.size();
 	is.push_back( jmp(-total_size) );
 
+}
+
+void WhileStmt::get_variables(std::set<std::string> &vars){
+	exp->get_variables(vars);
+	body->get_variables(vars);
 }
 
 FunctionStmt::FunctionStmt(
@@ -470,4 +591,9 @@ void SetFieldStmt::emit(std::map<std::string, int> &context,
 	expression->emit(context, is);
 	object->emit(context, is);
 	is.push_back( insert_s( strdup(field.c_str())) );
+}
+
+void SetFieldStmt::get_variables(std::set<std::string> &vars){
+	object->get_variables(vars);
+	expression->get_variables(vars);
 }

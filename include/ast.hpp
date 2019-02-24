@@ -1,12 +1,18 @@
 #ifndef  AST_HPP
 #define  AST_HPP
 
+#include <set>
+
 #include "parser.h"
 #include "instruction.hpp"
 
 class Expression{
 	public:
-	virtual void emit(std::map<std::string, int> &,std::vector<Instruction> &) = 0;
+	virtual void 
+	emit(std::map<std::string, int> &,std::vector<Instruction> &) = 0;
+
+	virtual void
+	get_variables(std::set<std::string> &vars);
 };
 
 class IntExp : public Expression{
@@ -42,6 +48,7 @@ class VarExp : public Expression{
 	public:
 	VarExp(char *);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
+	void get_variables(std::set<std::string> &vars);
 };
 
 class BlockStmt;
@@ -54,6 +61,7 @@ class ClosureExp : public Expression{
 	ClosureExp(std::initializer_list<std::string>, BlockStmt *);
 	ClosureExp(std::vector<std::string>, BlockStmt *);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
+	void get_variables(std::set<std::string> &vars);
 };
 
 enum BinOp 
@@ -68,6 +76,7 @@ class BinExp : public Expression{
 	public:
 	BinExp(enum BinOp, Expression *, Expression *);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
+	void get_variables(std::set<std::string> &vars);
 };
 
 class CallExp : public Expression{
@@ -79,6 +88,7 @@ class CallExp : public Expression{
 	CallExp(std::string, std::initializer_list<Expression *>);
 	CallExp(std::string, std::vector<Expression *>);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
+	void get_variables(std::set<std::string> &vars);
 };
 
 class ClosureCallExp : public Expression{
@@ -90,6 +100,7 @@ class ClosureCallExp : public Expression{
 	ClosureCallExp(Expression *exp, std::initializer_list<Expression *>);
 	ClosureCallExp(Expression *exp, std::vector<Expression *>);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
+	void get_variables(std::set<std::string> &vars);
 };
 
 class GetFieldExp : public Expression{
@@ -100,6 +111,7 @@ class GetFieldExp : public Expression{
 	public:
 	GetFieldExp(std::string, Expression *);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
+	void get_variables(std::set<std::string> &vars);
 };
 
 
@@ -107,6 +119,7 @@ class Statement{
 	public:
 	virtual
 	void emit(std::map<std::string, int> &,std::vector<Instruction> &) = 0;
+	virtual void get_variables(std::set<std::string> &vars);
 	virtual void find_DeclareStmts(std::vector<std::string>&){
 	}
 	virtual bool is_DeclareStmt(void){
@@ -120,6 +133,7 @@ class ReturnStmt : public Statement{
 	public:
 	ReturnStmt(Expression *);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
+	void get_variables(std::set<std::string> &vars);
 };
 
 class DeclareStmt : public Statement{
@@ -132,6 +146,7 @@ class DeclareStmt : public Statement{
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	virtual bool is_DeclareStmt(void);
 	virtual void find_DeclareStmts(std::vector<std::string>&);
+	void get_variables(std::set<std::string> &vars);
 };
 
 class AssignStmt : public Statement{
@@ -140,6 +155,7 @@ class AssignStmt : public Statement{
 	char *var;
 
 	public:
+	void get_variables(std::set<std::string> &vars);
 	AssignStmt(Expression *, char *);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 };
@@ -153,6 +169,7 @@ class BlockStmt : public Statement{
 	BlockStmt(std::vector<Statement *>);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	virtual void find_DeclareStmts(std::vector<std::string>&);
+	void get_variables(std::set<std::string> &vars);
 };
 
 class IfStmt : public Statement{
@@ -166,6 +183,7 @@ class IfStmt : public Statement{
 	IfStmt(Expression *, BlockStmt *, BlockStmt *);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	virtual void find_DeclareStmts(std::vector<std::string>&);
+	void get_variables(std::set<std::string> &vars);
 };
 
 class WhileStmt : public Statement{
@@ -177,6 +195,7 @@ class WhileStmt : public Statement{
 	WhileStmt(Expression *, BlockStmt *);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	virtual void find_DeclareStmts(std::vector<std::string>&);
+	void get_variables(std::set<std::string> &vars);
 };
 
 class FunctionStmt : public Statement{
@@ -200,6 +219,7 @@ class SetFieldStmt : public Statement{
 	public:
 	SetFieldStmt(std::string, Expression *obj, Expression *exp);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
+	void get_variables(std::set<std::string> &vars);
 };
 
 #endif

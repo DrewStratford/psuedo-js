@@ -23,6 +23,9 @@ enum OpCode{
 	NEW_OBJ,
 	NEW_VEC,
 	NEW_CLOS,
+	NEW_UNIT,
+
+	CLOS_CAP, //puts stack address variable into closure
 
 	LOAD_IMM_F,
 	LOAD_IMM_I,
@@ -79,7 +82,10 @@ Instruction jmp(char *);
 
 Instruction new_obj(void);
 Instruction new_vec(void);
+Instruction new_unit(void);
 Instruction new_closure(int);
+
+Instruction closure_capture(int);
 
 Instruction load_imm_f(float);
 Instruction load_imm_i(int);

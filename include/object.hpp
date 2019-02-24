@@ -50,6 +50,8 @@ class Object{
 	enum ObjType get_type(void);
 	Closure *get_closure(void);
 
+	void capture_var(Object *o);
+
 	void show(void);
 
 	Object *lookup(std::string str);
@@ -74,18 +76,18 @@ class Object{
 	friend Object * lte(Object *, Object *);
 	friend Object * gt(Object *, Object *);
 	friend Object * gte(Object *, Object *);
-
 };
 
 
 class Closure{
 	private:
-	std::vector<Object *> env;
 	int func_ptr;
 	public:
+	std::vector<Object *> env;
 	Closure(int f_ptr);
-	Closure(int func, std::vector<Object *> &env);
 	int get_func(void);
+	void push_var(Object *o);
+	void print_env(void);
 };
 
 

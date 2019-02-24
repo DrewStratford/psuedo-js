@@ -81,6 +81,12 @@ bool Object::equals(Object *o){
 	return out;	
 }
 
+void Object::capture_var(Object *o){
+	if(type == CLOSURE){
+		closure->push_var(o);
+	}
+}
+
 /*
  * Garbage collection stuff
  */
@@ -195,6 +201,7 @@ void Object::show(void){
 			break;
 		case CLOSURE:
 			std::cout << "CLOSURE" << std::endl;
+			closure->print_env();
 			break;
 	}
 }
@@ -267,14 +274,17 @@ Closure::Closure(int f_ptr){
 	this->func_ptr = f_ptr;
 }
 
-Closure::Closure(int f_ptr, std::vector<Object *> &env){
-	this->func_ptr = f_ptr;
-	
+int Closure::get_func(void){
+	return func_ptr;
+}
+
+void Closure::print_env(void){
 	for(auto o : env){
-		this->env.push_back(o);
+		printf("\tcap: ");
+		o->show();
 	}
 }
 
-int Closure::get_func(void){
-	return func_ptr;
+void Closure::push_var(Object *o){
+	env.push_back(o);
 }

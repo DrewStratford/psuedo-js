@@ -602,7 +602,7 @@ int main(int argc, char **argv){
 
 
 	auto globals = new Object(OBJECT);
-	create_closures(is, globals);
+	//create_closures(is, globals);
 	process_labels(is);
 
 	for(int ip = 0; ip >= 0 && ip < is.size(); ){

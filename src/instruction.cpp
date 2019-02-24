@@ -40,11 +40,17 @@ void step_instruction(Context * ctxt,
 			{
 			Object *c = ctxt->pop();
 			if(c->get_type() == CLOSURE){
+				//push captured vars (all fully eval'd)
+				Closure *clos = c->get_closure();
+				for(auto obj : clos->env){
+					ctxt->push(obj);
+				}
 				ctxt->link((*ip) + 1);
 				//convert absolute to relative
 				//address;
-				int addr = c->get_closure()->get_func();
-				step = addr - (*ip);
+				int addr = c->get_closure()->get_func() - *ip;
+
+				step = addr; 
 			}
 			}
 			break;
@@ -54,13 +60,23 @@ void step_instruction(Context * ctxt,
 		case NEW_VEC:
 			ctxt->push(new Object(VECTOR));
 			break;
+		case NEW_UNIT:
+			ctxt->push(new Object(UNIT));
+			break;
 		case NEW_CLOS:
 			{
 			Closure *c = new Closure(i.i);
 			ctxt->push(new Object(c));
 			}
 			break;
-
+		case CLOS_CAP:
+			{
+			Object *clos = ctxt->pop();
+			Object *captured = ctxt->get(i.index);
+			clos->capture_var(captured);
+			ctxt->push(clos);
+			}
+			break;
 		case LOAD_IMM_F:
 			ctxt->push(new Object(i.f));
 			break;
@@ -225,10 +241,21 @@ Instruction new_vec(void){
 	return {.op = NEW_VEC};
 }
 
+Instruction new_unit(void){
+	return {.op = NEW_UNIT};
+}
+
 Instruction new_closure(int ip){
 	Instruction out;
 	out.op = NEW_CLOS;
 	out.i = ip;
+	return out;
+}
+
+Instruction closure_capture(int addr){
+	Instruction out;
+	out.op = CLOS_CAP;
+	out.index = addr;
 	return out;
 }
 
@@ -323,6 +350,18 @@ void process_labels(std::vector<Instruction> &ins){
 			int relative = absolute - ins_ptr;
 			ins[ins_ptr].op = JMP_LNK;
 			ins[ins_ptr].i = relative;
+		}
+	}
+
+	// changes closures from captured count -> absolute addr
+	// Note each closure's op codes are compiled + 3 + captured_vars
+	// from the new_closure.
+	for(int ins_ptr = 0; ins_ptr < ins.size(); ins_ptr++){
+		Instruction instr = ins[ins_ptr];
+		if(instr.op == NEW_CLOS){
+			int absolute = ins_ptr + 2 + instr.index;
+			ins[ins_ptr].op = NEW_CLOS;
+			ins[ins_ptr].index = absolute;
 		}
 	}
 }
