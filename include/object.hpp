@@ -59,6 +59,8 @@ class Object{
 	void set_idx(Object *idx, Object *o);
 	Object *lookup_idx(Object *idx);
 
+	Object *size(void);
+
 	//these should probably be private
 	friend void gc_sweep_vector(std::vector<Object*> *vec);
 	friend void gc_sweep_map(std::map<std::string, Object*> *map);

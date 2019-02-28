@@ -68,6 +68,14 @@ Closure *Object::get_closure(void){
 	return closure;
 }
 
+Object *Object::size(void){
+	if(type == VECTOR){
+		return new Object((int)vec->size());
+		
+	}
+	return new Object();
+}
+
 bool Object::equals(Object *o){
 	if(o == nullptr || this->type != o->type) return false;
 
@@ -179,10 +187,10 @@ void Object::remove(void){
 void Object::show(void){
 	switch(this->type){
 		case INT:
-			std::cout << this->i << std::endl;
+			std::cout << this->i;
 			break;
 		case FLOAT:
-			std::cout << this->f << std::endl;
+			std::cout << this->f;
 			break;
 		case OBJECT:
 			{
@@ -191,23 +199,27 @@ void Object::show(void){
 				for(auto pair : map){
 					std::cout << pair.first << " -> ";
 					pair.second->show();
+					std::cout << std::endl;
+					
 				}
 			}
 			break;
 		case VECTOR:
 			{
-				std::cout << "VECTOR ..." << std::endl;
+				std::cout << "[" ;
 				auto& map = *this->vec;
 				for(auto o : map){
 					o->show();
+					std::cout << ", ";
 				}
+				std::cout << "]" ;
 			}
 			break;
 		case UNIT:
-			std::cout << "UNIT" << std::endl;
+			std::cout << "UNIT" ;
 			break;
 		case CLOSURE:
-			std::cout << "CLOSURE" << std::endl;
+			std::cout << "CLOSURE";
 			closure->print_env();
 			break;
 	}
@@ -220,8 +232,12 @@ void Object::set(std::string str, Object *o){
 }
 
 Object *Object::lookup(std::string str){
-	if(this->type != OBJECT) return nullptr;
-	return this->obj->at(str);
+	if(this->type == OBJECT){
+		return this->obj->at(str);
+	} else if(type == VECTOR && str == "size"){
+		return size();
+	}
+	return nullptr;
 }
 
 void Object::set_idx(Object *idx, Object *o){
