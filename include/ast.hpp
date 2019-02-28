@@ -15,6 +15,12 @@ class Expression{
 	get_variables(std::set<std::string> &vars);
 };
 
+class UnitExp : public Expression{
+	public:
+	UnitExp(void);
+	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
+};
+
 class IntExp : public Expression{
 	private:
 	int i = 0;
@@ -34,12 +40,17 @@ class FloatExp : public Expression{
 };
 
 class ObjectExp : public Expression{
-	private:
-
 	public:
 	ObjectExp();
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 };
+
+class VectorExp : public Expression{
+	public:
+	VectorExp();
+	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
+};
+
 
 class VarExp : public Expression{
 	private:
@@ -103,13 +114,43 @@ class ClosureCallExp : public Expression{
 	void get_variables(std::set<std::string> &vars);
 };
 
-class GetFieldExp : public Expression{
+class AccessorExp : public Expression{
+	protected:
+	bool is_setter = false;
+
+	public:
+	void set_setter(bool);
+};
+
+class FieldAccessor: public AccessorExp{
 	private:
 	std::string field;
+
+	public:
+	FieldAccessor(std::string);
+	//void get_variables(std::set<std::string> &vars);
+	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
+};
+
+class ArrayAccessor: public AccessorExp{
+	private:
+	Expression *exp;
+
+	public:
+	ArrayAccessor(Expression *exp);
+	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
+	void get_variables(std::set<std::string> &vars);
+};
+
+class GetFieldExp : public Expression{
+	private:
+	//std::string field;
+	AccessorExp *accessor;
 	Expression *expression;
 
 	public:
-	GetFieldExp(std::string, Expression *);
+	//GetFieldExp(std::string, Expression *);
+	GetFieldExp(AccessorExp * acc, Expression *);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	void get_variables(std::set<std::string> &vars);
 };
@@ -212,12 +253,14 @@ class FunctionStmt : public Statement{
 
 class SetFieldStmt : public Statement{
 	private:
-	std::string field;
+	//std::string field;
+	AccessorExp *accessor;
 	Expression *object;
 	Expression *expression;
 
 	public:
-	SetFieldStmt(std::string, Expression *obj, Expression *exp);
+	//SetFieldStmt(std::string, Expression *obj, Expression *exp);
+	SetFieldStmt(AccessorExp *acc, Expression *obj, Expression *exp);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	void get_variables(std::set<std::string> &vars);
 };

@@ -77,6 +77,7 @@ bool Object::equals(Object *o){
 		case VECTOR: out = this->vec == o->vec; break;
 		case INT: out = this->i == o->i; break;
 		case FLOAT: out = this->f == o->f; break;
+		case UNIT: out = o->type == UNIT; break;
 	}
 	return out;	
 }
@@ -194,7 +195,13 @@ void Object::show(void){
 			}
 			break;
 		case VECTOR:
-			std::cout << "VECTOR ..." << std::endl;
+			{
+				std::cout << "VECTOR ..." << std::endl;
+				auto& map = *this->vec;
+				for(auto o : map){
+					o->show();
+				}
+			}
 			break;
 		case UNIT:
 			std::cout << "UNIT" << std::endl;
@@ -217,9 +224,28 @@ Object *Object::lookup(std::string str){
 	return this->obj->at(str);
 }
 
+void Object::set_idx(Object *idx, Object *o){
+	if(this->type != VECTOR && idx->type != INT) return ;
+	auto &m = *this->vec;
+	m[idx->i] = o;
+}
+
+Object *Object::lookup_idx(Object *idx){
+	if(this->type != VECTOR && idx->type != INT) return nullptr;
+	return this->vec->at(idx->i);
+}
+
 Object * add(Object *a, Object *b){
 	if(a->type == INT && b->type == INT) return new Object(a->i+ b->i);
 	if(a->type == FLOAT && b->type == FLOAT) return new Object(a->f+ b->f);
+	if(a->type == VECTOR){
+		a->vec->push_back(b);
+		return a;
+	}
+	if(b->type == VECTOR){
+		b->vec->insert(b->vec->begin(), a);
+		return b;
+	}
 	return new Object();
 }
 

@@ -56,6 +56,8 @@ class Object{
 
 	Object *lookup(std::string str);
 	void set(std::string str, Object *o);
+	void set_idx(Object *idx, Object *o);
+	Object *lookup_idx(Object *idx);
 
 	//these should probably be private
 	friend void gc_sweep_vector(std::vector<Object*> *vec);

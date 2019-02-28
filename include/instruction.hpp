@@ -40,6 +40,9 @@ enum OpCode{
 	LOOKUP_S,
 	INSERT_S,
 
+	LOOKUP_V,
+	INSERT_V,
+
 	ADD,
 	MIN,
 	MUL,
@@ -97,6 +100,9 @@ Instruction set_glb(char *);
 
 Instruction insert_s(char *);
 Instruction lookup_s(char *);
+
+Instruction insert_v(void);
+Instruction lookup_v(void);
 
 Instruction add(void);
 Instruction min(void);

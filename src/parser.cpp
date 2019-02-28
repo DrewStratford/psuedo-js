@@ -174,27 +174,50 @@ Expression * parse_parens(ParseInfo *p){
 	return nullptr;
 }
 
-bool parse_accessor(ParseInfo *p, std::string *id){
+FieldAccessor* parse_field_accessor(ParseInfo *p){
 	ParseInfo working = *p;
+	std::string id;
+	if( working.match(".") &&
+		working.identifier(&id)
+	  ){
+		*p = working;
+		return new FieldAccessor(id);
+	}
+	return nullptr;
+}
+
+ArrayAccessor *parse_array_accessor(ParseInfo *p){
+	ParseInfo working = *p;
+	Expression * exp = nullptr;
 	if( working.match("[") &&
-		working.identifier(id) &&
+		(exp = parse_Expression(&working)) && 
 		working.match("]") 
 	  ){
 		*p = working;
-		return true;
+		return new ArrayAccessor(exp);
 	}
-	return false;
+	return nullptr;
 }
 
-bool parse_accessors(ParseInfo *p, std::vector<std::string> *ids){
-	ParseInfo working = *p;
-	std::string id;
-	if(!parse_accessor(&working, &id)) return false;
-	
-	ids->push_back(id);
+AccessorExp * parse_accessor(ParseInfo *p){
+	AccessorExp *out = nullptr;
+	if((out = parse_field_accessor(p)) ||
+		(out = parse_array_accessor(p)) ){
+			return out;
+		}
+	return nullptr;
+}
 
-	while(parse_accessor(&working, &id)){
-		ids->push_back(id);
+//bool parse_accessors(ParseInfo *p, std::vector<std::string> *ids){
+bool parse_accessors(ParseInfo *p, std::vector<AccessorExp *> *accs){
+	ParseInfo working = *p;
+	AccessorExp * acc = nullptr;
+	if(!(acc = parse_accessor(&working)) ) return false;
+	
+	accs->push_back(acc);
+
+	while((acc = parse_accessor(&working)) ){
+		accs->push_back(acc);
 	}
 
 	*p = working;
@@ -219,7 +242,7 @@ bool parse_commasep_expr(ParseInfo *p, std::vector<Expression *> *exps){
 	}
 	return true;
 }
-//
+
 //can't really fail
 bool parse_commasep_ident(ParseInfo *p, std::vector<std::string> *ids){
 	ParseInfo working = *p;
@@ -280,14 +303,14 @@ Expression * parse_funcall(ParseInfo *p){
 
 Expression * parse_fieldaccess(ParseInfo *p){
 	ParseInfo working = *p;
-	std::vector<std::string> ids;
+	std::vector<AccessorExp *> accs;
 	Expression *exp = nullptr;
 
 	if((exp = parse_expr0(&working)) && 
-	  parse_accessors(&working, &ids)
+	  parse_accessors(&working, &accs)
 	){
-		for(auto& id : ids){
-			exp = new GetFieldExp(strdup(id.c_str()), exp);
+		for(auto& acc : accs){
+			exp = new GetFieldExp(acc, exp);
 		}
 		*p = working;
 		return exp;
@@ -319,12 +342,32 @@ Expression * parse_var(ParseInfo *p){
 	return nullptr;
 }
 
+Expression * parse_unit(ParseInfo *p){
+	ParseInfo working = *p;
+
+	if(working.match("null")){
+		*p = working;
+		return new UnitExp();
+	}
+	return nullptr;
+}
+
 Expression * parse_object(ParseInfo *p){
 	ParseInfo working = *p;
 
 	if(working.match("{}")){
 		*p = working;
 		return new ObjectExp();
+	}
+	return nullptr;
+}
+
+Expression * parse_vector(ParseInfo *p){
+	ParseInfo working = *p;
+
+	if(working.match("[]")){
+		*p = working;
+		return new VectorExp();
 	}
 	return nullptr;
 }
@@ -337,7 +380,6 @@ Expression *parse_closure(ParseInfo *p){
 	std::vector<std::string> args;
 	BlockStmt *body;
 
-	//arguments not working at the moment
 	if(working.match("closure") &&
 	   working.match("(") && 
 	   parse_commasep_ident(&working, &args) &&
@@ -357,9 +399,11 @@ Expression * parse_expr0(ParseInfo *p){
 	else if( out = parse_closcall(p)) return out;
 	else if( out = parse_closure(p)) return out;
 	else if( out = parse_funcall(p)) return out;
+	else if( out = parse_unit(p)) return out;
 	else if( out = parse_int(p)) return out;
 	else if( out = parse_var(p)) return out;
 	else if( out = parse_object(p)) return out;
+	else if( out = parse_vector(p)) return out;
 	return out;
 }
 
@@ -422,25 +466,25 @@ Statement *parse_let(ParseInfo *p){
 
 Statement *parse_setfield(ParseInfo *p){
 	ParseInfo working = *p;
-	//std::string field;
-	std::vector<std::string> fields;
+	std::vector<AccessorExp *> accs;
 	Expression *exp = nullptr;
 	Expression *obj = nullptr;
 
 	if((obj = parse_expr0(&working)) &&
-	   parse_accessors(&working, &fields) &&
+	   parse_accessors(&working, &accs) &&
 		working.match("=") &&
 	   (exp = parse_Expression(&working)) &&
 	   working.match(";")
 	  ){
-		std::string field;
-		for(int i = 0; i < fields.size()-1; i++){
-			field = fields[i];
-			obj = new GetFieldExp(strdup(field.c_str()), obj);
+		AccessorExp *acc = nullptr;
+		for(int i = 0; i < accs.size()-1; i++){
+			acc = accs[i];
+			obj = new GetFieldExp(acc, obj);
 		}
-		field = fields[fields.size()-1];
+		acc = accs[accs.size()-1];
 	  	*p = working;
-		return new SetFieldStmt(strdup(field.c_str()), obj, exp);
+		//return new SetFieldStmt(strdup(field.c_str()), obj, exp);
+		return new SetFieldStmt(acc, obj, exp);
 	}
 
 	if(exp != nullptr) delete exp;
@@ -532,6 +576,7 @@ Statement *parse_if(ParseInfo *p){
 	ParseInfo working = *p;
 	Expression *exp;
 	BlockStmt *body;
+	BlockStmt *_else = nullptr;
 
 	//arguments not working at the moment
 	if(working.match("if") &&
@@ -539,6 +584,11 @@ Statement *parse_if(ParseInfo *p){
 	   (body = parse_block(&working))
 	  ){
 	  	*p = working;
+		if(working.match("else") &&
+			(_else = parse_block(&working))){
+	  		*p = working;
+			return new IfStmt(exp, body, _else);
+		}
 		return new IfStmt(exp, body);
 	}
 

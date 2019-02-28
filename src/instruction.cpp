@@ -108,6 +108,22 @@ void step_instruction(Context * ctxt,
 			obj->set(i.str, b);
 			}
 			break;
+		case LOOKUP_V:
+			{
+			Object *index = ctxt->pop();
+			Object *vector = ctxt->pop();
+			Object * out = vector->lookup_idx(index);
+			ctxt->push(out);
+			}
+			break;
+		case INSERT_V:
+			{
+			Object *index = ctxt->pop();
+			Object *vector = ctxt->pop();
+			Object *adding = ctxt->pop();
+			vector->set_idx(index, adding);
+			}
+			break;
 
 		case ADD:
 			{
@@ -319,6 +335,9 @@ Instruction lookup_s(char *c){
 	out.str = c;
 	return out;
 }
+
+Instruction lookup_v(void){ return {.op = LOOKUP_V}; }
+Instruction insert_v(void){ return {.op = INSERT_V}; }
 
 Instruction add(void){ return {.op = ADD}; }
 Instruction min(void){ return {.op = MIN}; }

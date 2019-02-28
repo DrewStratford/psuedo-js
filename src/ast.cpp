@@ -5,6 +5,14 @@
 void Expression::get_variables(std::set<std::string> &vars){
 }
 
+UnitExp::UnitExp(void){}
+
+void UnitExp::emit(std::map<std::string, int> &context,
+				  std::vector<Instruction> &is){
+	is.push_back( new_unit() );
+}
+
+
 IntExp::IntExp(int i){
 	this->i = i;
 }
@@ -29,6 +37,13 @@ ObjectExp::ObjectExp(){
 void ObjectExp::emit(std::map<std::string, int> &context,
 					 std::vector<Instruction> &is){
 	is.push_back( new_obj() );
+}
+
+VectorExp::VectorExp(){ }
+
+void VectorExp::emit(std::map<std::string, int> &context,
+					 std::vector<Instruction> &is){
+	is.push_back( new_vec() );
 }
 
 VarExp::VarExp(char *s){
@@ -171,15 +186,63 @@ void ClosureCallExp::get_variables(std::set<std::string> &vars){
 	}
 }
 
-GetFieldExp::GetFieldExp(std::string field, Expression *exp){
-	this->field = field;
+void AccessorExp::set_setter(bool flag){
+	is_setter = flag;
+}
+
+
+FieldAccessor::FieldAccessor(std::string f){
+	field = f;
+}
+void FieldAccessor::emit(std::map<std::string, int> &context,
+					   std::vector<Instruction> &is){
+	if(is_setter){
+		is.push_back( insert_s( strdup(field.c_str())) );
+	} else{
+		is.push_back( lookup_s( strdup(field.c_str())) );
+	}
+}
+
+// TODO: implement these.
+ArrayAccessor::ArrayAccessor(Expression *exp){
+	this->exp = exp;
+}
+
+void ArrayAccessor::emit(std::map<std::string, int> &context,
+					   std::vector<Instruction> &is){
+	exp->emit(context, is);
+	if(is_setter){
+		is.push_back( insert_v() );
+	} else{
+		is.push_back( lookup_v() );
+	}
+}
+
+void ArrayAccessor::get_variables(std::set<std::string> &vars){
+	//TODO: implement this
+}
+
+/*
+ * This now does the double duty of "getting" from arrays and
+ * objects.
+ */
+//GetFieldExp::GetFieldExp(std::string field, Expression *exp){
+GetFieldExp::GetFieldExp(AccessorExp *acc, Expression *exp){
+	acc->set_setter(false);
+	this->accessor = acc;
 	this->expression = exp;
 }
 
 void GetFieldExp::emit(std::map<std::string, int> &context,
 					   std::vector<Instruction> &is){
 	expression->emit(context, is);
-	is.push_back( lookup_s( strdup(field.c_str())) );
+	//is.push_back( lookup_s( strdup(field.c_str())) );
+	accessor->emit(context, is);
+}
+
+void GetFieldExp::get_variables(std::set<std::string> &vars){
+	expression->get_variables(vars);
+	accessor->get_variables(vars);
 }
 
 ClosureExp::ClosureExp(
@@ -190,10 +253,6 @@ ClosureExp::ClosureExp(
 		arguments.push_back(arg);
 	}
 	this->body = body;
-}
-
-void GetFieldExp::get_variables(std::set<std::string> &vars){
-	expression->get_variables(vars);
 }
 
 ClosureExp::ClosureExp(
@@ -578,10 +637,12 @@ void FunctionStmt::emit(std::map<std::string, int> &context,
 	}
 }
 
-SetFieldStmt::SetFieldStmt(std::string field,
+SetFieldStmt::SetFieldStmt(AccessorExp *acc,
 						   Expression *obj,
 						   Expression *exp){
-	this->field = field;
+	//this->field = field;
+	acc->set_setter(true);
+	this->accessor = acc;
 	this->object = obj;
 	this->expression = exp;
 }
@@ -590,10 +651,12 @@ void SetFieldStmt::emit(std::map<std::string, int> &context,
 						std::vector<Instruction> &is){
 	expression->emit(context, is);
 	object->emit(context, is);
-	is.push_back( insert_s( strdup(field.c_str())) );
+	accessor->emit(context, is);
 }
 
 void SetFieldStmt::get_variables(std::set<std::string> &vars){
 	object->get_variables(vars);
 	expression->get_variables(vars);
+	accessor->get_variables(vars);
 }
+
