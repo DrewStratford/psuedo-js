@@ -299,15 +299,12 @@ void ClosureExp::emit(std::map<std::string, int> &context,
 	get_variables(used);
 	int captured = 0;
 
-	puts("captured variables:");
 	for(auto s : used){
 		if(context.count(s) > 0){
 			std::cout << s << std::endl;
 			captured++;
 		}
 	}
-	puts("=================");
-	printf("captured %d\n", captured);
 
 	/*
 	 * Set up the closure creation
@@ -321,7 +318,6 @@ void ClosureExp::emit(std::map<std::string, int> &context,
 	 * 		closure_start (label)
 	 */
 	int clos_addr_abs = is.size()+3+ captured; //TODO: consider 3
-	printf("captured %d\n", captured);
 
 	//is.push_back( new_closure(clos_addr_abs) );
 	is.push_back( new_closure(captured) );
@@ -445,7 +441,6 @@ void AssignStmt::emit(std::map<std::string, int> &context,
 	} else{
 		char* s = this->var;
 		is.push_back(set_glb(s));
-		std::cout << "global assign\n";
 	}
 }
 

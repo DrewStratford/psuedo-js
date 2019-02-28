@@ -648,8 +648,6 @@ int main(int argc, char **argv){
 	std::vector<Instruction> is= std::vector<Instruction>();
 	auto c = std::map<std::string, int>();
 	stmt->emit(c, is);
-	is.push_back( show_frame());
-
 
 	auto globals = new Object(OBJECT);
 	//create_closures(is, globals);
