@@ -13,6 +13,9 @@ class Context{
 	//stores the return address from jmp_lnk
 	std::vector<int> ret_stack;
 
+	//Stores handles for FFI
+	std::map<std::string, void*> ffi_handles;
+
 	public:
 	Context();
 	~Context();
@@ -37,6 +40,9 @@ class Context{
 	void link(int lnk);
 
 	void garbage_collect(void);
+
+	bool ffi_load(std::string);
+	bool ffi_call_sym(std::string);
 	
 };
 

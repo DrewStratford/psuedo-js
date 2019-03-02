@@ -1,5 +1,8 @@
 #include "context.hpp"
 #include <iostream>
+#include <cstring>
+
+#include <dlfcn.h>
 
 Context::Context(){
 	push_frame(0);
@@ -94,5 +97,50 @@ void Context::show_frame(void){
 		o->show();
 	}
 	std::cout << "}\n";
+}
+
+bool Context::ffi_load(std::string lib){
+	void *handle = dlopen(strdup(lib.c_str()), RTLD_NOW);
+
+	char *error = dlerror();
+	if(error){
+		std::cerr << "ffi_load: " << error << std::endl;
+		return false;
+	}
+
+	ffi_handles[lib] = handle;
+	
+	return true;
+}
+
+/*
+ * ffi symbols are in the format:
+ * 	module::symbol
+ */
+bool Context::ffi_call_sym(std::string sym){
+	std::string delim = "::";
+	std::string module = sym.substr(0, sym.find(delim));
+	std::string symbol = sym.substr(sym.find(delim)+delim.size(), sym.size());
+
+	std::cout << "module=" << module << ", sym=" << symbol << std::endl;
+
+	if(ffi_handles.count(module) < 1){
+		std::cerr << "ffi_call_sym: cant find module: " << module << std::endl;
+		return false;
+	}
+
+	void *handle = ffi_handles[module];
+	void (*func)()  = (void (*)())dlsym(handle, strdup(symbol.c_str()));
+
+	char *error = dlerror();
+	if(error){
+		std::cerr << "ffi_call: " << error << std::endl;
+		return false;
+	}
+	
+	// calls the foreign function
+	func();
+
+	return true;
 }
 
