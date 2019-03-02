@@ -189,6 +189,16 @@ void step_instruction(Context * ctxt,
 			ctxt->push(new Object(c));
 			}
 			break;
+
+		case FFI_LOAD:
+			puts("TODO: implement ffi_load");
+			break;
+		case FFI_CALL_SYM:
+			puts("TODO: implement ffi_call_sym");
+			break;
+		case FFI_CALL:
+			puts("TODO: implement ffi_call");
+			break;
 		default:
 			std::cout << "error unimplemented op code" << std::endl;
 			break;
@@ -333,6 +343,27 @@ Instruction lookup_s(char *c){
 	Instruction out;
 	out.op = LOOKUP_S;
 	out.str = c;
+	return out;
+}
+
+Instruction ffi_load(char *c){
+	Instruction out;
+	out.op = FFI_LOAD;
+	out.str = c;
+	return out;
+}
+
+Instruction ffi_call_sym(char *c){
+	Instruction out;
+	out.op = FFI_CALL_SYM;
+	out.str = c;
+	return out;
+}
+
+Instruction ffi_call(void *func_ptr){
+	Instruction out;
+	out.op = FFI_LOAD;
+	out.ptr = func_ptr;
 	return out;
 }
 

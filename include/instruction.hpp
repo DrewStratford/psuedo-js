@@ -52,9 +52,12 @@ enum OpCode{
 	LT,
 	LTE,
 	GT,
-	GTE
+	GTE,
 
-	
+	// Foreign function interface
+	FFI_LOAD,	//loads lib
+	FFI_CALL_SYM,	//calls based on sym
+	FFI_CALL		//calls based on known func address
 };
 
 
@@ -62,6 +65,7 @@ typedef struct Instruction{
 	enum OpCode op;
 	union{
 		char * str;
+		void * ptr;
 		int index;
 		int i;
 		float f;
@@ -114,6 +118,10 @@ Instruction lt(void);
 Instruction lte(void);
 Instruction gt(void);
 Instruction gte(void);
+
+Instruction ffi_load(char *);
+Instruction ffi_call_sym(char *);
+Instruction ffi_call(void *);
 
 void process_labels(std::vector<Instruction> &ins);
 
