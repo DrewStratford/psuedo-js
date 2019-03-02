@@ -1,6 +1,6 @@
 VPATH = src include build
 
-CFLAGS ?= -g
+CFLAGS ?= -g -Wl,--export-dynamic
 NAME ?= Language
 
 
