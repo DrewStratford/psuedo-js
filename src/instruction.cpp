@@ -191,10 +191,10 @@ void step_instruction(Context * ctxt,
 			break;
 
 		case FFI_LOAD:
-			puts("TODO: implement ffi_load");
+			ctxt->ffi_load(i.str);
 			break;
 		case FFI_CALL_SYM:
-			puts("TODO: implement ffi_call_sym");
+			ctxt->ffi_call_sym(i.str);
 			break;
 		case FFI_CALL:
 			puts("TODO: implement ffi_call");
