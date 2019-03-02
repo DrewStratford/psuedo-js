@@ -220,7 +220,7 @@ void Object::show(void){
 			break;
 		case CLOSURE:
 			std::cout << "CLOSURE";
-			closure->print_env();
+			//closure->print_env();
 			break;
 	}
 }
