@@ -87,6 +87,24 @@ class ParseInfo{
 		return found;
 	}
 
+	bool non_whitespace(std::string *out){
+		bool found = false;
+
+		int i = skip_whitespace();
+		int start = i;
+
+		while(i< input.size() && !isspace(input[i])){
+			found = true;
+			i++;
+		}
+		
+		if(found) {
+			index = i;
+			*out = input.substr(start, index-start);
+		}
+		return found;
+	}
+
 	
 };
 
@@ -263,6 +281,25 @@ bool parse_commasep_ident(ParseInfo *p, std::vector<std::string> *ids){
 	return true;
 }
 
+Expression * parse_ffi_call(ParseInfo *p){
+	ParseInfo working = *p;
+	std::string name;
+	std::vector<Expression *> args;
+
+	if( working.match("foreign") &&
+	  	//working.match("[") &&
+		working.non_whitespace(&name)&&
+	  	//working.match("]") &&
+	  	working.match("(") &&
+		parse_commasep_expr(&working, &args) &&
+	  	working.match(")")
+	){
+		*p = working;
+		return new FFICallExp(name, args);
+	}
+
+	return nullptr;
+}
 Expression * parse_closcall(ParseInfo *p){
 	ParseInfo working = *p;
 	Expression *clos = nullptr;
@@ -396,6 +433,7 @@ Expression *parse_closure(ParseInfo *p){
 Expression * parse_expr0(ParseInfo *p){
 	Expression *out = nullptr;
 	if( out = parse_parens(p)) return out;
+	else if( out = parse_ffi_call(p)) return out;
 	else if( out = parse_closcall(p)) return out;
 	else if( out = parse_closure(p)) return out;
 	else if( out = parse_funcall(p)) return out;
@@ -595,9 +633,24 @@ Statement *parse_if(ParseInfo *p){
 	return nullptr;
 }
 
+Statement *parse_FFI_load(ParseInfo *p){
+	ParseInfo working = *p;
+	std::string ffi;
+
+	if(working.match("#load") &&
+	   working.non_whitespace(&ffi)
+	  ){
+	  	*p = working;
+		return new LoadFFIStmt(ffi);
+	}
+
+	return nullptr;
+}
+
 Statement *parse_statement(ParseInfo *p){
 	Statement * out = nullptr;
 
+	if(out = parse_FFI_load(p)) return out;
 	if(out = parse_funcdef(p)) return out;
 	if(out = parse_if(p)) return out;
 	if(out = parse_while(p)) return out;

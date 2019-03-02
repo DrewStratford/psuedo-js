@@ -194,7 +194,13 @@ void step_instruction(Context * ctxt,
 			ctxt->ffi_load(i.str);
 			break;
 		case FFI_CALL_SYM:
+			//technically doesn't do anything
+			//but we still need to link this call
+			ctxt->link((*ip) + 1);
+
 			ctxt->ffi_call_sym(i.str);
+			//return
+			ctxt->ret(ctxt->pop());
 			break;
 		case FFI_CALL:
 			puts("TODO: implement ffi_call");

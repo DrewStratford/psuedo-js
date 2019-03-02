@@ -114,6 +114,17 @@ class ClosureCallExp : public Expression{
 	void get_variables(std::set<std::string> &vars);
 };
 
+class FFICallExp : public Expression{
+	private:
+	std::string func_name;
+	std::vector<Expression *> arguments;
+
+	public:
+	FFICallExp(std::string, std::vector<Expression *>);
+	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
+	void get_variables(std::set<std::string> &vars);
+};
+
 class AccessorExp : public Expression{
 	protected:
 	bool is_setter = false;
@@ -263,6 +274,15 @@ class SetFieldStmt : public Statement{
 	SetFieldStmt(AccessorExp *acc, Expression *obj, Expression *exp);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	void get_variables(std::set<std::string> &vars);
+};
+
+class LoadFFIStmt : public Statement{
+	private:
+	std::string ffi_name;
+
+	public:
+	LoadFFIStmt(std::string);
+	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 };
 
 #endif

@@ -186,6 +186,34 @@ void ClosureCallExp::get_variables(std::set<std::string> &vars){
 	}
 }
 
+FFICallExp::FFICallExp(
+				std::string func,
+				std::vector<Expression *> args
+				){
+	this->func_name = func;
+	for(auto a : args){
+		this->arguments.push_back(a);
+	}
+}
+
+void FFICallExp::emit(
+			std::map<std::string, int> &context,
+			std::vector<Instruction> &is
+			){
+	
+	for(auto a : arguments){
+		a->emit(context, is);
+	}
+	is.push_back( push_frame(arguments.size()) );
+	is.push_back( ffi_call_sym(strdup(func_name.c_str())) );
+}
+
+void FFICallExp::get_variables(std::set<std::string> &vars){
+	for(auto arg : arguments){
+		arg->get_variables(vars);
+	}
+}
+
 void AccessorExp::set_setter(bool flag){
 	is_setter = flag;
 }
@@ -655,3 +683,11 @@ void SetFieldStmt::get_variables(std::set<std::string> &vars){
 	accessor->get_variables(vars);
 }
 
+LoadFFIStmt::LoadFFIStmt(std::string name){
+	this->ffi_name = name;
+}
+
+void LoadFFIStmt::emit(std::map<std::string, int> &context,
+						std::vector<Instruction> &is){
+	is.push_back( ffi_load(strdup(ffi_name.c_str())) );
+}
