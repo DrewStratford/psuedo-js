@@ -7,7 +7,7 @@ NAME ?= Language
 
 CC       := gcc
 CXX     := g++
-LIBS     := -lm 
+LIBS     := -lm -ldl
 INCLUDES := -Iinclude
 CFLAGS   := $(CFLAGS) $(INCLUDES) $(LIBS)
 BUILDDIR := build
