@@ -130,7 +130,8 @@ bool Context::ffi_call_sym(std::string sym){
 	}
 
 	void *handle = ffi_handles[module];
-	void (*func)()  = (void (*)())dlsym(handle, strdup(symbol.c_str()));
+	void (*func)(std::vector<Object*>&)  = 
+		(void (*)(std::vector<Object*>&))dlsym(handle, strdup(symbol.c_str()));
 
 	char *error = dlerror();
 	if(error){
@@ -139,7 +140,7 @@ bool Context::ffi_call_sym(std::string sym){
 	}
 	
 	// calls the foreign function
-	func();
+	func(stack.front());
 
 	return true;
 }

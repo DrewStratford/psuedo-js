@@ -25,10 +25,8 @@ class Object{
 	void insert_after(Object *o);
 	void remove(void);
 
-	/*
-	 *
-	 */
 
+	public:
 	enum ObjType type;
 	union{
 		int i;
@@ -38,7 +36,6 @@ class Object{
 		Closure *closure;
 	};
 
-	public:
 	Object(); 
 	Object(int i);
 	Object(float f);
