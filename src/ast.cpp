@@ -41,9 +41,27 @@ void ObjectExp::emit(std::map<std::string, int> &context,
 
 VectorExp::VectorExp(){ }
 
+VectorExp::VectorExp(std::vector<Expression *> &es){
+	for(auto exp : es){
+		elems.push_back(exp);
+	}
+}
+
 void VectorExp::emit(std::map<std::string, int> &context,
 					 std::vector<Instruction> &is){
 	is.push_back( new_vec() );
+	//we push the elems then add them to the newly
+	// created vector
+	for(auto exp : elems){
+		exp->emit(context, is);
+		is.push_back( add() );
+	}
+}
+
+void VectorExp::get_variables(std::set<std::string> &vars){
+	for(auto exp : elems){
+		exp->get_variables(vars);
+	}
 }
 
 VarExp::VarExp(char *s){

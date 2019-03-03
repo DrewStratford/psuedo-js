@@ -46,9 +46,13 @@ class ObjectExp : public Expression{
 };
 
 class VectorExp : public Expression{
+	std::vector<Expression *> elems;
+
 	public:
 	VectorExp();
+	VectorExp(std::vector<Expression *> &);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
+	void get_variables(std::set<std::string> &vars);
 };
 
 

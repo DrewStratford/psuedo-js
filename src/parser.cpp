@@ -53,6 +53,43 @@ class ParseInfo{
 		return true;
 	}
 
+	//TODO: implement escape codes;
+	bool character(char *out){
+		*out = 0;
+
+		int i = skip_whitespace();
+		if(i+3 < (input.size()) &&
+			input[i] == '\'' &&
+			input[i+2] == '\''
+		  ){
+
+			*out = input[i+1];
+			index = i+3;
+			return true;
+		}
+		
+		return false;
+	}
+
+	bool string(std::string *str){
+		int i = skip_whitespace();
+
+		if( i < input.size() && input[i] == '"'){
+			i++;
+			int start = i;
+			while(i < input.size()){
+				if(input[i] == '"'){
+						*str = input.substr(start, i-start);
+						index = i+1;
+						return true;
+				}
+				i++;
+			}
+		}
+		return false;
+		
+	}
+
 	bool integer(int *out){
 		*out = 0;
 		bool found = false;
@@ -93,7 +130,15 @@ class ParseInfo{
 		int i = skip_whitespace();
 		int start = i;
 
-		while(i< input.size() && !isspace(input[i])){
+		while(i< input.size() && 
+				!isspace(input[i]) &&
+				// There has to be a better way
+				// to do this.
+				input[i] != '(' && 
+				input[i] != ')' && 
+				input[i] != '[' && 
+				input[i] != ']'
+				){
 			found = true;
 			i++;
 		}
@@ -226,7 +271,6 @@ AccessorExp * parse_accessor(ParseInfo *p){
 	return nullptr;
 }
 
-//bool parse_accessors(ParseInfo *p, std::vector<std::string> *ids){
 bool parse_accessors(ParseInfo *p, std::vector<AccessorExp *> *accs){
 	ParseInfo working = *p;
 	AccessorExp * acc = nullptr;
@@ -357,6 +401,16 @@ Expression * parse_fieldaccess(ParseInfo *p){
 	return nullptr;
 }
 
+Expression * parse_char(ParseInfo *p){
+	int c;
+	ParseInfo working = *p;
+
+	if(working.character((char *)&c)){
+		*p = working;
+		return new IntExp(c);
+	}
+	return nullptr;
+}
 Expression * parse_int(ParseInfo *p){
 	int i;
 	ParseInfo working = *p;
@@ -399,12 +453,31 @@ Expression * parse_object(ParseInfo *p){
 	return nullptr;
 }
 
+Expression * parse_string(ParseInfo *p){
+	ParseInfo working = *p;
+	std::string str;
+	std::vector<Expression *> chars;
+
+	if(working.string(&str)){
+		*p = working;
+		for(auto c : str){
+			chars.push_back( new IntExp(c));
+		}
+		return new VectorExp(chars);
+	}
+	return nullptr;
+}
+
 Expression * parse_vector(ParseInfo *p){
 	ParseInfo working = *p;
+	std::vector<Expression *> elems;
 
-	if(working.match("[]")){
+	if(working.match("[") &&
+		parse_commasep_expr(&working, &elems) &&
+		working.match("]")
+	){
 		*p = working;
-		return new VectorExp();
+		return new VectorExp(elems);
 	}
 	return nullptr;
 }
@@ -438,9 +511,11 @@ Expression * parse_expr0(ParseInfo *p){
 	else if( out = parse_closure(p)) return out;
 	else if( out = parse_funcall(p)) return out;
 	else if( out = parse_unit(p)) return out;
+	else if( out = parse_char(p)) return out;
 	else if( out = parse_int(p)) return out;
 	else if( out = parse_var(p)) return out;
 	else if( out = parse_object(p)) return out;
+	else if( out = parse_string(p)) return out;
 	else if( out = parse_vector(p)) return out;
 	return out;
 }
