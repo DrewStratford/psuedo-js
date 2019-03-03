@@ -122,8 +122,6 @@ bool Context::ffi_call_sym(std::string sym){
 	std::string module = sym.substr(0, sym.find(delim));
 	std::string symbol = sym.substr(sym.find(delim)+delim.size(), sym.size());
 
-	std::cout << "module=" << module << ", sym=" << symbol << std::endl;
-
 	if(ffi_handles.count(module) < 1){
 		std::cerr << "ffi_call_sym: cant find module: " << module << std::endl;
 		return false;
