@@ -528,13 +528,13 @@ void BlockStmt::get_variables(std::set<std::string> &vars){
 	}
 }
 
-IfStmt::IfStmt(Expression *exp, BlockStmt *block){
+IfStmt::IfStmt(Expression *exp, Statement *block){
 	this->exp = exp;
 	this->_if = block;
 	this->_else = new BlockStmt({});
 }
 
-IfStmt::IfStmt(Expression *exp, BlockStmt *block, BlockStmt *block2){
+IfStmt::IfStmt(Expression *exp, Statement *block, Statement *block2){
 	this->exp = exp;
 	this->_if = block;
 	this->_else = block2;

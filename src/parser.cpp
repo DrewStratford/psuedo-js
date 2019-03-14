@@ -664,17 +664,17 @@ Statement *parse_while(ParseInfo *p){
 Statement *parse_if(ParseInfo *p){
 	ParseInfo working = *p;
 	Expression *exp;
-	BlockStmt *body;
-	BlockStmt *_else = nullptr;
+	Statement *body;
+	Statement *_else = nullptr;
 
 	//arguments not working at the moment
 	if(working.match("if") &&
 	   (exp = parse_parens(&working)) &&
-	   (body = parse_block(&working))
+	   (body = parse_statement(&working))
 	  ){
 	  	*p = working;
 		if(working.match("else") &&
-			(_else = parse_block(&working))){
+			(_else = parse_statement(&working))){
 	  		*p = working;
 			return new IfStmt(exp, body, _else);
 		}

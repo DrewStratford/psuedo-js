@@ -232,12 +232,12 @@ class BlockStmt : public Statement{
 class IfStmt : public Statement{
 	private:
 	Expression *exp;
-	BlockStmt *_if;
-	BlockStmt *_else;
+	Statement * _if;
+	Statement * _else;
 
 	public:
-	IfStmt(Expression *, BlockStmt *);
-	IfStmt(Expression *, BlockStmt *, BlockStmt *);
+	IfStmt(Expression *, Statement *);
+	IfStmt(Expression *, Statement *, Statement *);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	virtual void find_DeclareStmts(std::vector<std::string>&);
 	void get_variables(std::set<std::string> &vars);
