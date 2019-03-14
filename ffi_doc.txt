@@ -1,0 +1,26 @@
+This document specifies how the ffi is used.
+
+the statement:
+	#load ./my_ffi.so
+
+loads the shared object my_ffi. This uses dlopen
+so paths should be specified with that in mind.
+
+foreign lib::funcname (args)
+
+calls the function funcname from the lib shared object.
+
+
+Foreign libraries are written in cpp and should be compiled with
+	g++ -share mylib.cpp -o mylib.so
+
+As dlopen is used, all functions you wish to be available should
+be marked with extern "C" to avoid name mangling.
+
+Exposed functions are given a std::vector of pointers to Objects, 
+defined in object.hpp.  The vector can be considered to be the functions 
+stack frame and contains the objects passed to the callee. The last 
+element of t his vector is the object that will be returned from 
+the function; if the call frame is empty null(Unit) is returned instead.
+
+TODO: pinning objects and other GC concerns.
