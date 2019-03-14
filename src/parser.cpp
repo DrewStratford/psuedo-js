@@ -153,42 +153,18 @@ class ParseInfo{
 	
 };
 
- bool parse_binop(ParseInfo *p, enum BinOp *b){
- 	if(p->match("==")){
-		*b = EQ_OP;
-		return true;
-	}
- 	if(p->match("<=")){
-		*b = LTE_OP;
-		return true;
-	}
- 	if(p->match("<")){
-		*b = LT_OP;
-		return true;
-	}
- 	if(p->match(">=")){
-		*b = GTE_OP;
-		return true;
-	}
- 	if(p->match(">")){
-		*b = GT_OP;
-		return true;
-	}
- 	if(p->match("+")){
-		*b = ADD_OP;
-		return true;
-	}
- 	if(p->match("-")){
-		*b = MIN_OP;
-		return true;
-	}
- 	if(p->match("*")){
-		*b = MUL_OP;
-		return true;
-	}
- 	if(p->match("/")){
-		*b = DIV_OP;
-		return true;
+std::string op_str[] = 
+	{ "==", "<=", "<", ">=", ">", "+", "-", "*", "/", "%"};
+enum BinOp op_enum[] = 
+	{EQ_OP, LTE_OP, LT_OP, GTE_OP, GT_OP, ADD_OP, MIN_OP, 
+	MUL_OP, DIV_OP, MOD_OP};
+bool parse_binop(ParseInfo *p, enum BinOp *b){
+
+	for(int i = 0; i < sizeof(op_str) / sizeof(op_str[1]); i++){
+		if( p->match(op_str[i]) ){
+			*b = op_enum[i];
+			return true;
+		}
 	}
 	return false;
 }

@@ -47,6 +47,7 @@ enum OpCode{
 	MIN,
 	MUL,
 	DIV,
+	MOD,
 
 	EQ,
 	LT,
@@ -112,8 +113,9 @@ Instruction add(void);
 Instruction min(void);
 Instruction mul(void);
 Instruction div(void);
-Instruction eq(void);
+Instruction mod(void);
 
+Instruction eq(void);
 Instruction lt(void);
 Instruction lte(void);
 Instruction gt(void);

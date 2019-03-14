@@ -153,6 +153,13 @@ void step_instruction(Context * ctxt,
 			ctxt->push(div(b, a));
 			}
 			break;
+		case MOD:
+			{
+			Object *a = ctxt->pop();
+			Object *b = ctxt->pop();
+			ctxt->push(mod(b, a));
+			}
+			break;
 		case LT:
 			{
 			Object *a = ctxt->pop();
@@ -380,6 +387,7 @@ Instruction add(void){ return {.op = ADD}; }
 Instruction min(void){ return {.op = MIN}; }
 Instruction mul(void){ return {.op = MUL}; }
 Instruction div(void){ return {.op = DIV}; }
+Instruction mod(void){ return {.op = MOD}; }
 Instruction eq(void){ return {.op = EQ}; }
 
 Instruction lt(void){ return {.op = LT}; }

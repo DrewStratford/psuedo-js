@@ -110,6 +110,9 @@ void BinExp::emit(std::map<std::string, int> &context,
 		case DIV_OP:
 			operation = div();
 			break;
+		case MOD_OP:
+			operation = mod();
+			break;
 		case EQ_OP:
 			operation = eq();
 			break;

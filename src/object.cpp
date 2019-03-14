@@ -265,6 +265,7 @@ Object * add(Object *a, Object *b){
 	return new Object();
 }
 
+
 Object * sub(Object *a, Object *b){
 	if(a->type == INT && b->type == INT) return new Object(a->i- b->i);
 	if(a->type == FLOAT && b->type == FLOAT) return new Object(a->f- b->f);
@@ -280,6 +281,11 @@ Object * mul(Object *a, Object *b){
 Object * div(Object *a, Object *b){
 	if(a->type == INT && b->type == INT) return new Object(a->i/ b->i);
 	if(a->type == FLOAT && b->type == FLOAT) return new Object(a->f/ b->f);
+	return new Object();
+}
+
+Object * mod(Object *a, Object *b){
+	if(a->type == INT && b->type == INT) return new Object(a->i% b->i);
 	return new Object();
 }
 

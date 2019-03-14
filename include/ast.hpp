@@ -80,7 +80,8 @@ class ClosureExp : public Expression{
 };
 
 enum BinOp 
-	{ADD_OP, MIN_OP, MUL_OP, DIV_OP, EQ_OP, LT_OP, LTE_OP, GT_OP, GTE_OP};
+	{ADD_OP, MIN_OP, MUL_OP, DIV_OP, MOD_OP, EQ_OP, LT_OP,
+	LTE_OP, GT_OP, GTE_OP};
 class BinExp : public Expression{
 	private:
 	enum BinOp op;

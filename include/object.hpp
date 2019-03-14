@@ -71,6 +71,7 @@ class Object{
 	friend Object * add(Object *, Object *);
 	friend Object * sub(Object *, Object *);
 	friend Object * mul(Object *, Object *);
+	friend Object * mod(Object *, Object *);
 	friend Object * div(Object *, Object *);
 
 	friend Object * lt(Object *, Object *);
