@@ -8,6 +8,9 @@
 
 #include "ast.hpp"
 
+#define MAKE_EXPR(EXP) std::shared_ptr<Expression>(EXP)
+#define MAKE_STMT(STMT) std::shared_ptr<Statement>(STMT)
+#define MAKE_ACCESS(EXP) std::shared_ptr<AccessorExp>(EXP)
 class ParseInfo{
 	public:
 	int index;
@@ -169,17 +172,17 @@ bool parse_binop(ParseInfo *p, enum BinOp *b){
 	return false;
 }
 
-Expression * parse_expr0(ParseInfo *p);
-Expression * parse_expr1(ParseInfo *p);
-Expression * parse_expr2(ParseInfo *p);
+ExprPtr  parse_expr0(ParseInfo *p);
+ExprPtr  parse_expr1(ParseInfo *p);
+ExprPtr  parse_expr2(ParseInfo *p);
 
-Expression * parse_Expression(ParseInfo *p);
+ExprPtr  parse_Expression(ParseInfo *p);
 
-Expression * parse_ArithExpr(ParseInfo *p){
+ExprPtr  parse_ArithExpr(ParseInfo *p){
 	ParseInfo working = *p;
 	enum BinOp op;
-	Expression *exp1 = nullptr;
-	Expression *exp2 = nullptr;
+	ExprPtr exp1 = nullptr;
+	ExprPtr exp2 = nullptr;
 
 	if((exp1 = parse_expr1(&working)) &&
 	   parse_binop(&working, &op) &&
@@ -187,17 +190,15 @@ Expression * parse_ArithExpr(ParseInfo *p){
 	){
 
 		*p = working;
-		return new BinExp(op, exp1, exp2);
+		return MAKE_EXPR(new BinExp(op, exp1, exp2));
 	}
 
-	if(exp1 == nullptr) delete exp1;
-	if(exp2 == nullptr) delete exp2;
 	return nullptr;
 }
 
-Expression * parse_parens(ParseInfo *p){
+ExprPtr  parse_parens(ParseInfo *p){
 	ParseInfo working = *p;
-	Expression *exp1 = nullptr;
+	ExprPtr exp1 = nullptr;
 
 
 	if(working.match("(") &&
@@ -209,37 +210,36 @@ Expression * parse_parens(ParseInfo *p){
 		return exp1;
 	}
 
-	if(exp1 == nullptr) delete exp1;
 	return nullptr;
 }
 
-FieldAccessor* parse_field_accessor(ParseInfo *p){
+AccessPtr parse_field_accessor(ParseInfo *p){
 	ParseInfo working = *p;
 	std::string id;
 	if( working.match(".") &&
 		working.identifier(&id)
 	  ){
 		*p = working;
-		return new FieldAccessor(id);
+		return MAKE_ACCESS(new FieldAccessor(id));
 	}
 	return nullptr;
 }
 
-ArrayAccessor *parse_array_accessor(ParseInfo *p){
+AccessPtr parse_array_accessor(ParseInfo *p){
 	ParseInfo working = *p;
-	Expression * exp = nullptr;
+	ExprPtr  exp = nullptr;
 	if( working.match("[") &&
 		(exp = parse_Expression(&working)) && 
 		working.match("]") 
 	  ){
 		*p = working;
-		return new ArrayAccessor(exp);
+		return MAKE_ACCESS(new ArrayAccessor(exp));
 	}
 	return nullptr;
 }
 
-AccessorExp * parse_accessor(ParseInfo *p){
-	AccessorExp *out = nullptr;
+AccessPtr  parse_accessor(ParseInfo *p){
+	AccessPtr out = nullptr;
 	if((out = parse_field_accessor(p)) ||
 		(out = parse_array_accessor(p)) ){
 			return out;
@@ -247,9 +247,9 @@ AccessorExp * parse_accessor(ParseInfo *p){
 	return nullptr;
 }
 
-bool parse_accessors(ParseInfo *p, std::vector<AccessorExp *> *accs){
+bool parse_accessors(ParseInfo *p, std::vector<AccessPtr > *accs){
 	ParseInfo working = *p;
-	AccessorExp * acc = nullptr;
+	AccessPtr  acc = nullptr;
 	if(!(acc = parse_accessor(&working)) ) return false;
 	
 	accs->push_back(acc);
@@ -263,9 +263,9 @@ bool parse_accessors(ParseInfo *p, std::vector<AccessorExp *> *accs){
 }
 
 //can't really fail
-bool parse_commasep_expr(ParseInfo *p, std::vector<Expression *> *exps){
+bool parse_commasep_expr(ParseInfo *p, std::vector<ExprPtr > *exps){
 	ParseInfo working = *p;
-	Expression *exp = nullptr;
+	ExprPtr exp = nullptr;
 	
 	if(!(exp = parse_Expression(&working))) return true;
 	exps->push_back(exp);
@@ -301,29 +301,27 @@ bool parse_commasep_ident(ParseInfo *p, std::vector<std::string> *ids){
 	return true;
 }
 
-Expression * parse_ffi_call(ParseInfo *p){
+ExprPtr  parse_ffi_call(ParseInfo *p){
 	ParseInfo working = *p;
 	std::string name;
-	std::vector<Expression *> args;
+	std::vector<ExprPtr > args;
 
 	if( working.match("foreign") &&
-	  	//working.match("[") &&
 		working.non_whitespace(&name)&&
-	  	//working.match("]") &&
 	  	working.match("(") &&
 		parse_commasep_expr(&working, &args) &&
 	  	working.match(")")
 	){
 		*p = working;
-		return new FFICallExp(name, args);
+		return MAKE_EXPR(new FFICallExp(name, args));
 	}
 
 	return nullptr;
 }
-Expression * parse_closcall(ParseInfo *p){
+ExprPtr  parse_closcall(ParseInfo *p){
 	ParseInfo working = *p;
-	Expression *clos = nullptr;
-	std::vector<Expression *> args;
+	ExprPtr clos = nullptr;
+	std::vector<ExprPtr> args;
 
 	if( working.match("call") &&
 	  	working.match("[") &&
@@ -334,16 +332,16 @@ Expression * parse_closcall(ParseInfo *p){
 	  	working.match(")")
 	){
 		*p = working;
-		return new ClosureCallExp(clos, args);
+		return MAKE_EXPR(new ClosureCallExp(clos, args));
 	}
 
 	return nullptr;
 }
 
-Expression * parse_funcall(ParseInfo *p){
+ExprPtr parse_funcall(ParseInfo *p){
 	ParseInfo working = *p;
 	std::string id;
-	std::vector<Expression *> args;
+	std::vector<ExprPtr > args;
 
 	if( working.identifier(&id) &&
 	  	working.match("(") &&
@@ -351,120 +349,118 @@ Expression * parse_funcall(ParseInfo *p){
 	  	working.match(")")
 	){
 		*p = working;
-		return new CallExp(id, args);
+		return MAKE_EXPR(new CallExp(id, args));
 	}
 
-	//TODO delete stuff properly
 	return nullptr;
 }
 
-Expression * parse_fieldaccess(ParseInfo *p){
+ExprPtr parse_fieldaccess(ParseInfo *p){
 	ParseInfo working = *p;
-	std::vector<AccessorExp *> accs;
-	Expression *exp = nullptr;
+	std::vector<AccessPtr > accs;
+	ExprPtr exp = nullptr;
 
 	if((exp = parse_expr0(&working)) && 
 	  parse_accessors(&working, &accs)
 	){
 		for(auto& acc : accs){
-			exp = new GetFieldExp(acc, exp);
+			exp = MAKE_EXPR(new GetFieldExp(acc, exp));
 		}
 		*p = working;
 		return exp;
 	}
 
-	if(exp == nullptr) delete exp;
 	return nullptr;
 }
 
-Expression * parse_char(ParseInfo *p){
+ExprPtr  parse_char(ParseInfo *p){
 	int c;
 	ParseInfo working = *p;
 
 	if(working.character((char *)&c)){
 		*p = working;
-		return new IntExp(c);
+		return MAKE_EXPR(new IntExp(c));
 	}
 	return nullptr;
 }
-Expression * parse_int(ParseInfo *p){
+ExprPtr  parse_int(ParseInfo *p){
 	int i;
 	ParseInfo working = *p;
 
 	if(working.integer(&i)){
 		*p = working;
-		return new IntExp(i);
+		return MAKE_EXPR(new IntExp(i));
 	}
 	return nullptr;
 }
 
-Expression * parse_var(ParseInfo *p){
+ExprPtr  parse_var(ParseInfo *p){
 	std::string s;
 	ParseInfo working = *p;
 
 	if(working.identifier(&s)){
 		*p = working;
-		return new VarExp(strdup(s.c_str()));
+		return MAKE_EXPR( new VarExp(strdup(s.c_str())) );
 	}
 	return nullptr;
 }
 
-Expression * parse_unit(ParseInfo *p){
+ExprPtr  parse_unit(ParseInfo *p){
 	ParseInfo working = *p;
 
 	if(working.match("null")){
 		*p = working;
-		return new UnitExp();
+		return MAKE_EXPR(new UnitExp());
 	}
 	return nullptr;
 }
 
-Expression * parse_object(ParseInfo *p){
+ExprPtr  parse_object(ParseInfo *p){
 	ParseInfo working = *p;
 
 	if(working.match("{}")){
 		*p = working;
-		return new ObjectExp();
+		return MAKE_EXPR( new ObjectExp() );
 	}
 	return nullptr;
 }
 
-Expression * parse_string(ParseInfo *p){
+ExprPtr  parse_string(ParseInfo *p){
 	ParseInfo working = *p;
 	std::string str;
-	std::vector<Expression *> chars;
+	std::vector<ExprPtr > chars;
 
 	if(working.string(&str)){
 		*p = working;
 		for(auto c : str){
-			chars.push_back( new IntExp(c));
+			chars.push_back( MAKE_EXPR(new IntExp(c)) );
 		}
-		return new VectorExp(chars);
+		return MAKE_EXPR(new VectorExp(chars));
 	}
 	return nullptr;
 }
 
-Expression * parse_vector(ParseInfo *p){
+ExprPtr  parse_vector(ParseInfo *p){
 	ParseInfo working = *p;
-	std::vector<Expression *> elems;
+	std::vector<ExprPtr> elems;
 
 	if(working.match("[") &&
 		parse_commasep_expr(&working, &elems) &&
 		working.match("]")
 	){
 		*p = working;
-		return new VectorExp(elems);
+		return std::shared_ptr<Expression>(new VectorExp(elems));
 	}
 	return nullptr;
 }
 
-BlockStmt *parse_block(ParseInfo *p);
+std::shared_ptr<BlockStmt> parse_block(ParseInfo *p);
 
-Expression *parse_closure(ParseInfo *p){
+ExprPtr parse_closure(ParseInfo *p){
 	ParseInfo working = *p;
 	std::string id;
 	std::vector<std::string> args;
-	BlockStmt *body;
+	std::shared_ptr<BlockStmt> body;
 
 	if(working.match("closure") &&
 	   working.match("(") && 
@@ -473,14 +469,14 @@ Expression *parse_closure(ParseInfo *p){
 	   (body = parse_block(&working))
 	  ){
 	  	*p = working;
-		return new ClosureExp(args, body);
+		return MAKE_EXPR(new ClosureExp(args, body));
 	}
 
 	return nullptr;
 }
 
-Expression * parse_expr0(ParseInfo *p){
-	Expression *out = nullptr;
+ExprPtr  parse_expr0(ParseInfo *p){
+	ExprPtr out = nullptr;
 	if( out = parse_parens(p)) return out;
 	else if( out = parse_ffi_call(p)) return out;
 	else if( out = parse_closcall(p)) return out;
@@ -496,48 +492,48 @@ Expression * parse_expr0(ParseInfo *p){
 	return out;
 }
 
-Expression * parse_expr1(ParseInfo *p){
-	Expression *out = nullptr;
+ExprPtr  parse_expr1(ParseInfo *p){
+	ExprPtr out = nullptr;
 	if( out = parse_fieldaccess(p)) return out;
 	else if( out = parse_expr0(p)) return out;
 	return out;
 }
 
-Expression * parse_expr2(ParseInfo *p){
-	Expression *out = nullptr;
+ExprPtr  parse_expr2(ParseInfo *p){
+	ExprPtr out = nullptr;
 	if( out = parse_ArithExpr(p)) return out;
 	else if( out = parse_expr1(p)) return out;
 	return out;
 }
 
-Expression * parse_Expression(ParseInfo *p){
-	Expression *out = nullptr;
+ExprPtr  parse_Expression(ParseInfo *p){
+	ExprPtr out = nullptr;
 	if( out = parse_expr2(p)) return out;
 	return out;
 }
 
-Statement *parse_statement(ParseInfo *p);
+StmtPtr parse_statement(ParseInfo *p);
 
-Statement *parse_return(ParseInfo *p){
+StmtPtr parse_return(ParseInfo *p){
 	ParseInfo working = *p;
 	std::string id;
-	Expression *exp = nullptr;
+	ExprPtr exp = nullptr;
 
 	if(working.match("return") &&
 	   (exp = parse_Expression(&working)) &&
 	   working.match(";")
 	  ){
 	  	*p = working;
-		return new ReturnStmt(exp);
+		return MAKE_STMT(new ReturnStmt(exp));
 	  }
 
-	  if(exp != nullptr) delete exp;
 	  return nullptr;
 }
-Statement *parse_let(ParseInfo *p){
+
+StmtPtr parse_let(ParseInfo *p){
 	ParseInfo working = *p;
 	std::string id;
-	Expression *exp = nullptr;
+	ExprPtr exp = nullptr;
 
 	if(working.match("let") &&
 	   working.identifier(&id) &&
@@ -546,18 +542,17 @@ Statement *parse_let(ParseInfo *p){
 	   working.match(";")
 	  ){
 	  	*p = working;
-		return new DeclareStmt(exp, strdup(id.c_str()));
+		return MAKE_STMT(new DeclareStmt(exp, strdup(id.c_str())));
 	  }
 
-	  if(exp != nullptr) delete exp;
 	  return nullptr;
 }
 
-Statement *parse_setfield(ParseInfo *p){
+StmtPtr parse_setfield(ParseInfo *p){
 	ParseInfo working = *p;
-	std::vector<AccessorExp *> accs;
-	Expression *exp = nullptr;
-	Expression *obj = nullptr;
+	std::vector<AccessPtr> accs;
+	ExprPtr exp = nullptr;
+	ExprPtr obj = nullptr;
 
 	if((obj = parse_expr0(&working)) &&
 	   parse_accessors(&working, &accs) &&
@@ -565,25 +560,23 @@ Statement *parse_setfield(ParseInfo *p){
 	   (exp = parse_Expression(&working)) &&
 	   working.match(";")
 	  ){
-		AccessorExp *acc = nullptr;
+		AccessPtr acc = nullptr;
 		for(int i = 0; i < accs.size()-1; i++){
 			acc = accs[i];
-			obj = new GetFieldExp(acc, obj);
+			obj = MAKE_EXPR( new GetFieldExp(acc, obj) );
 		}
 		acc = accs[accs.size()-1];
 	  	*p = working;
-		//return new SetFieldStmt(strdup(field.c_str()), obj, exp);
-		return new SetFieldStmt(acc, obj, exp);
+		return MAKE_STMT(new SetFieldStmt(acc, obj, exp));
 	}
 
-	if(exp != nullptr) delete exp;
 	return nullptr;
 }
 
-Statement *parse_assign(ParseInfo *p){
+StmtPtr parse_assign(ParseInfo *p){
 	ParseInfo working = *p;
 	std::string id;
-	Expression *exp = nullptr;
+	ExprPtr exp = nullptr;
 
 	if(working.identifier(&id) &&
 	   working.match("=") &&
@@ -591,21 +584,20 @@ Statement *parse_assign(ParseInfo *p){
 	   working.match(";")
 	  ){
 	  	*p = working;
-		return new AssignStmt(exp, strdup(id.c_str()));
+		return MAKE_STMT( new AssignStmt(exp, strdup(id.c_str())) );
 	}
 
-	if(exp != nullptr) delete exp;
 	return nullptr;
 }
 
-BlockStmt *parse_block(ParseInfo *p){
+std::shared_ptr<BlockStmt> parse_block(ParseInfo *p){
 	ParseInfo working = *p;
 	std::string id;
-	Expression *exp = nullptr;
+	ExprPtr exp = nullptr;
 
 	if(working.match("{")){
-		std::vector<Statement *> stmts;
-		Statement *stmt = nullptr;
+		std::vector<StmtPtr > stmts;
+		StmtPtr stmt = nullptr;
 		int i = 0;
 		while(!working.peek("}") && (stmt = parse_statement(&working))){
 			stmts.push_back(stmt);
@@ -615,7 +607,7 @@ BlockStmt *parse_block(ParseInfo *p){
 
 		if(working.match("}")){
 			*p = working;
-			return new BlockStmt(stmts);
+			return std::shared_ptr<BlockStmt>(new BlockStmt(stmts));
 		}
 		//TODO DELETE statments
 	}
@@ -623,11 +615,11 @@ BlockStmt *parse_block(ParseInfo *p){
 	return nullptr;
 }
 
-Statement *parse_funcdef(ParseInfo *p){
+StmtPtr parse_funcdef(ParseInfo *p){
 	ParseInfo working = *p;
 	std::string id;
 	std::vector<std::string> args;
-	BlockStmt *body;
+	std::shared_ptr<BlockStmt> body;
 
 	//arguments not working at the moment
 	if(working.match("fun") &&
@@ -638,16 +630,16 @@ Statement *parse_funcdef(ParseInfo *p){
 	   (body = parse_block(&working))
 	  ){
 	  	*p = working;
-		return new FunctionStmt(strdup(id.c_str()), args, body);
+		return MAKE_STMT(new FunctionStmt(strdup(id.c_str()), args, body));
 	}
 
 	return nullptr;
 }
 
-Statement *parse_while(ParseInfo *p){
+StmtPtr parse_while(ParseInfo *p){
 	ParseInfo working = *p;
-	Expression *exp;
-	BlockStmt *body;
+	ExprPtr exp;
+	std::shared_ptr<BlockStmt> body;
 
 	//arguments not working at the moment
 	if(working.match("while") &&
@@ -655,17 +647,17 @@ Statement *parse_while(ParseInfo *p){
 	   (body = parse_block(&working))
 	  ){
 	  	*p = working;
-		return new WhileStmt(exp, body);
+		return MAKE_STMT(new WhileStmt(exp, body));
 	}
 
 	return nullptr;
 }
 
-Statement *parse_if(ParseInfo *p){
+StmtPtr parse_if(ParseInfo *p){
 	ParseInfo working = *p;
-	Expression *exp;
-	Statement *body;
-	Statement *_else = nullptr;
+	ExprPtr exp;
+	StmtPtr body;
+	StmtPtr _else = nullptr;
 
 	//arguments not working at the moment
 	if(working.match("if") &&
@@ -676,15 +668,15 @@ Statement *parse_if(ParseInfo *p){
 		if(working.match("else") &&
 			(_else = parse_statement(&working))){
 	  		*p = working;
-			return new IfStmt(exp, body, _else);
+			return MAKE_STMT(new IfStmt(exp, body, _else));
 		}
-		return new IfStmt(exp, body);
+		return MAKE_STMT(new IfStmt(exp, body));
 	}
 
 	return nullptr;
 }
 
-Statement *parse_FFI_load(ParseInfo *p){
+StmtPtr parse_FFI_load(ParseInfo *p){
 	ParseInfo working = *p;
 	std::string ffi;
 
@@ -692,14 +684,14 @@ Statement *parse_FFI_load(ParseInfo *p){
 	   working.non_whitespace(&ffi)
 	  ){
 	  	*p = working;
-		return new LoadFFIStmt(ffi);
+		return MAKE_STMT(new LoadFFIStmt(ffi));
 	}
 
 	return nullptr;
 }
 
-Statement *parse_statement(ParseInfo *p){
-	Statement * out = nullptr;
+StmtPtr parse_statement(ParseInfo *p){
+	StmtPtr  out = nullptr;
 
 	if(out = parse_FFI_load(p)) return out;
 	if(out = parse_funcdef(p)) return out;
@@ -741,7 +733,7 @@ int main(int argc, char **argv){
 	ParseInfo p = ParseInfo(s);
 
 	
-	Statement *stmt = parse_statement(&p);
+	StmtPtr stmt = parse_statement(&p);
 	if(stmt == nullptr){
 		puts("no parse");
 		return 0;

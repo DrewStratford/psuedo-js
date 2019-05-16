@@ -41,7 +41,7 @@ void ObjectExp::emit(std::map<std::string, int> &context,
 
 VectorExp::VectorExp(){ }
 
-VectorExp::VectorExp(std::vector<Expression *> &es){
+VectorExp::VectorExp(std::vector<ExprPtr > &es){
 	for(auto exp : es){
 		elems.push_back(exp);
 	}
@@ -84,7 +84,7 @@ void VarExp::get_variables(std::set<std::string> &vars){
 }
 
 
-BinExp::BinExp(enum BinOp op, Expression *l, Expression *r){
+BinExp::BinExp(enum BinOp op, ExprPtr l, ExprPtr r){
 	this->op = op;
 	this->left = l;
 	this->right = r;
@@ -137,14 +137,14 @@ void BinExp::get_variables(std::set<std::string> &vars){
 	right->get_variables(vars);
 }
 
-CallExp::CallExp(std::string name, std::initializer_list<Expression *> args){
+CallExp::CallExp(std::string name, std::initializer_list<ExprPtr > args){
 	this->name = name;
 	for(auto a : args){
 		this->arguments.push_back(a);
 	}
 }
 
-CallExp::CallExp(std::string name, std::vector<Expression *> args){
+CallExp::CallExp(std::string name, std::vector<ExprPtr > args){
 	this->name = name;
 	for(auto a : args){
 		this->arguments.push_back(a);
@@ -168,8 +168,8 @@ void CallExp::get_variables(std::set<std::string> &vars){
 }
 
 ClosureCallExp::ClosureCallExp(
-	Expression *exp,
-	std::initializer_list<Expression *> args
+	ExprPtr exp,
+	std::initializer_list<ExprPtr > args
 	){
 	this->closure = exp;
 	for(auto a : args){
@@ -178,8 +178,8 @@ ClosureCallExp::ClosureCallExp(
 }
 
 ClosureCallExp::ClosureCallExp(
-				Expression *exp,
-				std::vector<Expression *> args
+				ExprPtr exp,
+				std::vector<ExprPtr > args
 				){
 	this->closure = exp;
 	for(auto a : args){
@@ -209,7 +209,7 @@ void ClosureCallExp::get_variables(std::set<std::string> &vars){
 
 FFICallExp::FFICallExp(
 				std::string func,
-				std::vector<Expression *> args
+				std::vector<ExprPtr > args
 				){
 	this->func_name = func;
 	for(auto a : args){
@@ -253,7 +253,7 @@ void FieldAccessor::emit(std::map<std::string, int> &context,
 }
 
 // TODO: implement these.
-ArrayAccessor::ArrayAccessor(Expression *exp){
+ArrayAccessor::ArrayAccessor(ExprPtr exp){
 	this->exp = exp;
 }
 
@@ -275,8 +275,8 @@ void ArrayAccessor::get_variables(std::set<std::string> &vars){
  * This now does the double duty of "getting" from arrays and
  * objects.
  */
-//GetFieldExp::GetFieldExp(std::string field, Expression *exp){
-GetFieldExp::GetFieldExp(AccessorExp *acc, Expression *exp){
+//GetFieldExp::GetFieldExp(std::string field, ExprPtr exp){
+GetFieldExp::GetFieldExp(AccessPtr acc, ExprPtr exp){
 	acc->set_setter(false);
 	this->accessor = acc;
 	this->expression = exp;
@@ -296,7 +296,7 @@ void GetFieldExp::get_variables(std::set<std::string> &vars){
 
 ClosureExp::ClosureExp(
 				std::vector<std::string> args,
-				BlockStmt *body){
+				std::shared_ptr<BlockStmt> body){
 
 	for(auto arg : args){
 		arguments.push_back(arg);
@@ -306,7 +306,7 @@ ClosureExp::ClosureExp(
 
 ClosureExp::ClosureExp(
 				std::initializer_list<std::string> args,
-				BlockStmt *body){
+				std::shared_ptr<BlockStmt> body){
 
 	for(auto arg : args){
 		arguments.push_back(arg);
@@ -432,7 +432,7 @@ void Statement::get_variables(std::set<std::string> &vars){
 	//default: does nothing.
 }
 
-ReturnStmt::ReturnStmt(Expression *exp){
+ReturnStmt::ReturnStmt(ExprPtr exp){
 	this->exp = exp;
 }
 
@@ -446,7 +446,7 @@ void ReturnStmt::get_variables(std::set<std::string> &vars){
 	exp->get_variables(vars);
 }
 
-DeclareStmt::DeclareStmt(Expression *exp, char *var){
+DeclareStmt::DeclareStmt(ExprPtr exp, char *var){
 	this->exp = exp;
 	this->var = var;
 }
@@ -476,7 +476,7 @@ void DeclareStmt::get_variables(std::set<std::string> &vars){
 	exp->get_variables(vars);
 }
 
-AssignStmt::AssignStmt(Expression *exp, char *var){
+AssignStmt::AssignStmt(ExprPtr exp, char *var){
 	this->exp = exp;
 	this->var = var;
 }
@@ -497,13 +497,13 @@ void AssignStmt::get_variables(std::set<std::string> &vars){
 	exp->get_variables(vars);
 }
 
-BlockStmt::BlockStmt(std::vector<Statement *> inits){
+BlockStmt::BlockStmt(std::vector<StmtPtr> inits){
 	for(auto stmt : inits){
 		this->statements.push_back(stmt);
 	}
 }
 
-BlockStmt::BlockStmt(std::initializer_list<Statement *> inits){
+BlockStmt::BlockStmt(std::initializer_list<StmtPtr> inits){
 	for(auto stmt : inits){
 		this->statements.push_back(stmt);
 	}
@@ -528,13 +528,13 @@ void BlockStmt::get_variables(std::set<std::string> &vars){
 	}
 }
 
-IfStmt::IfStmt(Expression *exp, Statement *block){
+IfStmt::IfStmt(ExprPtr exp, StmtPtr block){
 	this->exp = exp;
 	this->_if = block;
-	this->_else = new BlockStmt({});
+	this->_else = std::shared_ptr<BlockStmt>(new BlockStmt({}));
 }
 
-IfStmt::IfStmt(Expression *exp, Statement *block, Statement *block2){
+IfStmt::IfStmt(ExprPtr exp, StmtPtr block, StmtPtr block2){
 	this->exp = exp;
 	this->_if = block;
 	this->_else = block2;
@@ -581,7 +581,7 @@ void IfStmt::get_variables(std::set<std::string> &vars){
 }
 
 
-WhileStmt::WhileStmt(Expression *exp, BlockStmt *block){
+WhileStmt::WhileStmt(ExprPtr exp, std::shared_ptr<BlockStmt> block){
 	this->exp = exp;
 	this->body = block;
 }
@@ -622,7 +622,7 @@ void WhileStmt::get_variables(std::set<std::string> &vars){
 FunctionStmt::FunctionStmt(
 				std::string name, 
 				std::vector<std::string> args,
-				BlockStmt *body){
+				std::shared_ptr<BlockStmt> body){
 
 	for(auto arg : args){
 		arguments.push_back(arg);
@@ -634,7 +634,7 @@ FunctionStmt::FunctionStmt(
 FunctionStmt::FunctionStmt(
 				std::string name, 
 				std::initializer_list<std::string> args,
-				BlockStmt *body){
+				std::shared_ptr<BlockStmt> body){
 
 	for(auto arg : args){
 		arguments.push_back(arg);
@@ -681,9 +681,9 @@ void FunctionStmt::emit(std::map<std::string, int> &context,
 	}
 }
 
-SetFieldStmt::SetFieldStmt(AccessorExp *acc,
-						   Expression *obj,
-						   Expression *exp){
+SetFieldStmt::SetFieldStmt(AccessPtr acc,
+						   ExprPtr obj,
+						   ExprPtr exp){
 	//this->field = field;
 	acc->set_setter(true);
 	this->accessor = acc;

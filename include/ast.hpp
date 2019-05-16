@@ -2,6 +2,7 @@
 #define  AST_HPP
 
 #include <set>
+#include <memory>
 
 #include "parser.h"
 #include "instruction.hpp"
@@ -14,6 +15,8 @@ class Expression{
 	virtual void
 	get_variables(std::set<std::string> &vars);
 };
+
+using ExprPtr = std::shared_ptr<Expression>;
 
 class UnitExp : public Expression{
 	public:
@@ -46,11 +49,11 @@ class ObjectExp : public Expression{
 };
 
 class VectorExp : public Expression{
-	std::vector<Expression *> elems;
+	std::vector<ExprPtr> elems;
 
 	public:
 	VectorExp();
-	VectorExp(std::vector<Expression *> &);
+	VectorExp(std::vector<ExprPtr> &);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	void get_variables(std::set<std::string> &vars);
 };
@@ -70,11 +73,11 @@ class BlockStmt;
 class ClosureExp : public Expression{
 	private:
 	std::vector<std::string> arguments;
-	BlockStmt *body;
+	std::shared_ptr<BlockStmt> body;
 
 	public:
-	ClosureExp(std::initializer_list<std::string>, BlockStmt *);
-	ClosureExp(std::vector<std::string>, BlockStmt *);
+	ClosureExp(std::initializer_list<std::string>, std::shared_ptr<BlockStmt>);
+	ClosureExp(std::vector<std::string>, std::shared_ptr<BlockStmt>);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	void get_variables(std::set<std::string> &vars);
 };
@@ -85,12 +88,12 @@ enum BinOp
 class BinExp : public Expression{
 	private:
 	enum BinOp op;
-	Expression *left;
-	Expression *right;
+	ExprPtr left;
+	ExprPtr right;
 	
 
 	public:
-	BinExp(enum BinOp, Expression *, Expression *);
+	BinExp(enum BinOp, ExprPtr, ExprPtr);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	void get_variables(std::set<std::string> &vars);
 };
@@ -98,23 +101,23 @@ class BinExp : public Expression{
 class CallExp : public Expression{
 	private:
 	std::string name;
-	std::vector<Expression *> arguments;
+	std::vector<ExprPtr> arguments;
 
 	public:
-	CallExp(std::string, std::initializer_list<Expression *>);
-	CallExp(std::string, std::vector<Expression *>);
+	CallExp(std::string, std::initializer_list<ExprPtr>);
+	CallExp(std::string, std::vector<ExprPtr>);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	void get_variables(std::set<std::string> &vars);
 };
 
 class ClosureCallExp : public Expression{
 	private:
-	Expression *closure;
-	std::vector<Expression *> arguments;
+	ExprPtr closure;
+	std::vector<ExprPtr> arguments;
 
 	public:
-	ClosureCallExp(Expression *exp, std::initializer_list<Expression *>);
-	ClosureCallExp(Expression *exp, std::vector<Expression *>);
+	ClosureCallExp(ExprPtr exp, std::initializer_list<ExprPtr >);
+	ClosureCallExp(ExprPtr exp, std::vector<ExprPtr >);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	void get_variables(std::set<std::string> &vars);
 };
@@ -122,10 +125,10 @@ class ClosureCallExp : public Expression{
 class FFICallExp : public Expression{
 	private:
 	std::string func_name;
-	std::vector<Expression *> arguments;
+	std::vector<ExprPtr> arguments;
 
 	public:
-	FFICallExp(std::string, std::vector<Expression *>);
+	FFICallExp(std::string, std::vector<ExprPtr >);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	void get_variables(std::set<std::string> &vars);
 };
@@ -137,6 +140,8 @@ class AccessorExp : public Expression{
 	public:
 	void set_setter(bool);
 };
+
+using AccessPtr = std::shared_ptr<AccessorExp>;
 
 class FieldAccessor: public AccessorExp{
 	private:
@@ -150,23 +155,21 @@ class FieldAccessor: public AccessorExp{
 
 class ArrayAccessor: public AccessorExp{
 	private:
-	Expression *exp;
+	ExprPtr exp;
 
 	public:
-	ArrayAccessor(Expression *exp);
+	ArrayAccessor(ExprPtr exp);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	void get_variables(std::set<std::string> &vars);
 };
 
 class GetFieldExp : public Expression{
 	private:
-	//std::string field;
-	AccessorExp *accessor;
-	Expression *expression;
+	AccessPtr accessor;
+	ExprPtr expression;
 
 	public:
-	//GetFieldExp(std::string, Expression *);
-	GetFieldExp(AccessorExp * acc, Expression *);
+	GetFieldExp(AccessPtr  acc, ExprPtr );
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	void get_variables(std::set<std::string> &vars);
 };
@@ -183,23 +186,24 @@ class Statement{
 		return false;
 	}
 };
+using StmtPtr = std::shared_ptr<Statement>;
 
 class ReturnStmt : public Statement{
 	private:
-	Expression *exp;
+	ExprPtr exp;
 	public:
-	ReturnStmt(Expression *);
+	ReturnStmt(ExprPtr );
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	void get_variables(std::set<std::string> &vars);
 };
 
 class DeclareStmt : public Statement{
 	private:
-	Expression *exp;
+	ExprPtr exp;
 	char *var;
 
 	public:
-	DeclareStmt(Expression *, char *);
+	DeclareStmt(ExprPtr , char *);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	virtual bool is_DeclareStmt(void);
 	virtual void find_DeclareStmts(std::vector<std::string>&);
@@ -208,22 +212,22 @@ class DeclareStmt : public Statement{
 
 class AssignStmt : public Statement{
 	private:
-	Expression *exp;
+	ExprPtr exp;
 	char *var;
 
 	public:
 	void get_variables(std::set<std::string> &vars);
-	AssignStmt(Expression *, char *);
+	AssignStmt(ExprPtr , char *);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 };
 
 class BlockStmt : public Statement{
 	private:
-	std::vector<Statement *> statements;
+	std::vector<StmtPtr> statements;
 
 	public:
-	BlockStmt(std::initializer_list<Statement *>);
-	BlockStmt(std::vector<Statement *>);
+	BlockStmt(std::initializer_list<StmtPtr>);
+	BlockStmt(std::vector<StmtPtr>);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	virtual void find_DeclareStmts(std::vector<std::string>&);
 	void get_variables(std::set<std::string> &vars);
@@ -231,13 +235,13 @@ class BlockStmt : public Statement{
 
 class IfStmt : public Statement{
 	private:
-	Expression *exp;
-	Statement * _if;
-	Statement * _else;
+	ExprPtr exp;
+	StmtPtr _if;
+	StmtPtr _else;
 
 	public:
-	IfStmt(Expression *, Statement *);
-	IfStmt(Expression *, Statement *, Statement *);
+	IfStmt(ExprPtr , StmtPtr);
+	IfStmt(ExprPtr , StmtPtr, StmtPtr);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	virtual void find_DeclareStmts(std::vector<std::string>&);
 	void get_variables(std::set<std::string> &vars);
@@ -245,11 +249,11 @@ class IfStmt : public Statement{
 
 class WhileStmt : public Statement{
 	private:
-	Expression *exp;
-	BlockStmt *body;
+	ExprPtr exp;
+	std::shared_ptr<BlockStmt> body;
 
 	public:
-	WhileStmt(Expression *, BlockStmt *);
+	WhileStmt(ExprPtr , std::shared_ptr<BlockStmt>);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	virtual void find_DeclareStmts(std::vector<std::string>&);
 	void get_variables(std::set<std::string> &vars);
@@ -259,24 +263,26 @@ class FunctionStmt : public Statement{
 	private:
 	std::string name;
 	std::vector<std::string> arguments;
-	BlockStmt *body;
+	std::shared_ptr<BlockStmt>body;
 
 	public:
-	FunctionStmt(std::string, std::initializer_list<std::string>, BlockStmt *);
-	FunctionStmt(std::string, std::vector<std::string>, BlockStmt *);
+	FunctionStmt(std::string, std::initializer_list<std::string>, 
+				std::shared_ptr<BlockStmt>);
+	FunctionStmt(std::string, std::vector<std::string>, 
+				std::shared_ptr<BlockStmt>);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 };
 
 class SetFieldStmt : public Statement{
 	private:
 	//std::string field;
-	AccessorExp *accessor;
-	Expression *object;
-	Expression *expression;
+	AccessPtr accessor;
+	ExprPtr object;
+	ExprPtr expression;
 
 	public:
-	//SetFieldStmt(std::string, Expression *obj, Expression *exp);
-	SetFieldStmt(AccessorExp *acc, Expression *obj, Expression *exp);
+	//SetFieldStmt(std::string, ExprPtr obj, ExprPtr exp);
+	SetFieldStmt(AccessPtr acc, ExprPtr obj, ExprPtr exp);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	void get_variables(std::set<std::string> &vars);
 };
