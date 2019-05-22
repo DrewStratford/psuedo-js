@@ -156,6 +156,8 @@ class ParseInfo{
 	
 };
 
+bool parse_commasep_expr(ParseInfo *p, std::vector<ExprPtr > *exps);
+
 std::string op_str[] = 
 	{ "==", "<=", "<", ">=", ">", "+", "-", "*", "/", "%"};
 enum BinOp op_enum[] = 
@@ -238,9 +240,26 @@ AccessPtr parse_array_accessor(ParseInfo *p){
 	return nullptr;
 }
 
+AccessPtr parse_closure_call(ParseInfo *p){
+	ParseInfo working = *p;
+	ExprPtr clos = nullptr;
+	std::vector<ExprPtr> args;
+
+	if( working.match("(") &&
+		parse_commasep_expr(&working, &args) &&
+	  	working.match(")")
+	){
+		*p = working;
+		return MAKE_ACCESS(new ClosureCallExp(nullptr, args));
+	}
+
+	return nullptr;
+}
+
 AccessPtr  parse_accessor(ParseInfo *p){
 	AccessPtr out = nullptr;
 	if((out = parse_field_accessor(p)) ||
+		(out = parse_closure_call(p)) ||
 		(out = parse_array_accessor(p)) ){
 			return out;
 		}
@@ -364,7 +383,9 @@ ExprPtr parse_fieldaccess(ParseInfo *p){
 	  parse_accessors(&working, &accs)
 	){
 		for(auto& acc : accs){
-			exp = MAKE_EXPR(new GetFieldExp(acc, exp));
+			//exp = MAKE_EXPR(new GetFieldExp(acc, exp));
+			acc->set_sub_expr(exp);
+			exp = acc;
 		}
 		*p = working;
 		return exp;
@@ -479,9 +500,9 @@ ExprPtr  parse_expr0(ParseInfo *p){
 	ExprPtr out = nullptr;
 	if( out = parse_parens(p)) return out;
 	else if( out = parse_ffi_call(p)) return out;
-	else if( out = parse_closcall(p)) return out;
+	//else if( out = parse_closcall(p)) return out;
 	else if( out = parse_closure(p)) return out;
-	else if( out = parse_funcall(p)) return out;
+	//else if( out = parse_funcall(p)) return out;
 	else if( out = parse_unit(p)) return out;
 	else if( out = parse_char(p)) return out;
 	else if( out = parse_int(p)) return out;
@@ -553,6 +574,7 @@ StmtPtr parse_setfield(ParseInfo *p){
 	std::vector<AccessPtr> accs;
 	ExprPtr exp = nullptr;
 	ExprPtr obj = nullptr;
+	AccessPtr acc = nullptr;
 
 	if((obj = parse_expr0(&working)) &&
 	   parse_accessors(&working, &accs) &&
@@ -560,14 +582,16 @@ StmtPtr parse_setfield(ParseInfo *p){
 	   (exp = parse_Expression(&working)) &&
 	   working.match(";")
 	  ){
-		AccessPtr acc = nullptr;
-		for(int i = 0; i < accs.size()-1; i++){
-			acc = accs[i];
-			obj = MAKE_EXPR( new GetFieldExp(acc, obj) );
+		acc = accs[0];
+		acc->set_sub_expr(obj);
+		for(int i = 1; i < accs.size(); i++){
+			//exp = MAKE_EXPR(new GetFieldExp(acc, exp));
+			auto a = accs[i];
+			a->set_sub_expr(acc);
+			acc = a;
 		}
-		acc = accs[accs.size()-1];
 	  	*p = working;
-		return MAKE_STMT(new SetFieldStmt(acc, obj, exp));
+		return MAKE_STMT(new SetFieldStmt(acc, exp));
 	}
 
 	return nullptr;
@@ -746,7 +770,7 @@ int main(int argc, char **argv){
 	stmt->emit(c, is);
 
 	auto globals = new Object(OBJECT);
-	//create_closures(is, globals);
+	create_closures(is, globals);
 	process_labels(is);
 
 	for(int ip = 0; ip >= 0 && ip < is.size(); ){

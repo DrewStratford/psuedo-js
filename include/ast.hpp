@@ -110,17 +110,6 @@ class CallExp : public Expression{
 	void get_variables(std::set<std::string> &vars);
 };
 
-class ClosureCallExp : public Expression{
-	private:
-	ExprPtr closure;
-	std::vector<ExprPtr> arguments;
-
-	public:
-	ClosureCallExp(ExprPtr exp, std::initializer_list<ExprPtr >);
-	ClosureCallExp(ExprPtr exp, std::vector<ExprPtr >);
-	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
-	void get_variables(std::set<std::string> &vars);
-};
 
 class FFICallExp : public Expression{
 	private:
@@ -138,6 +127,7 @@ class AccessorExp : public Expression{
 	bool is_setter = false;
 
 	public:
+	virtual void set_sub_expr(ExprPtr) = 0;
 	void set_setter(bool);
 };
 
@@ -146,21 +136,40 @@ using AccessPtr = std::shared_ptr<AccessorExp>;
 class FieldAccessor: public AccessorExp{
 	private:
 	std::string field;
+	ExprPtr sub_exp;
+	void get_variables(std::set<std::string> &vars);
 
 	public:
 	FieldAccessor(std::string);
 	//void get_variables(std::set<std::string> &vars);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
+	void set_sub_expr(ExprPtr);
 };
 
 class ArrayAccessor: public AccessorExp{
 	private:
 	ExprPtr exp;
+	ExprPtr sub_exp;
 
 	public:
 	ArrayAccessor(ExprPtr exp);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	void get_variables(std::set<std::string> &vars);
+	void set_sub_expr(ExprPtr);
+};
+
+class ClosureCallExp : public AccessorExp{
+	private:
+	ExprPtr closure;
+	std::vector<ExprPtr> arguments;
+
+	public:
+	ClosureCallExp(ExprPtr exp, std::initializer_list<ExprPtr >);
+	ClosureCallExp(ExprPtr exp, std::vector<ExprPtr >);
+	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
+	void get_variables(std::set<std::string> &vars);
+	void set_setter(bool);
+	void set_sub_expr(ExprPtr);
 };
 
 class GetFieldExp : public Expression{
@@ -275,14 +284,12 @@ class FunctionStmt : public Statement{
 
 class SetFieldStmt : public Statement{
 	private:
-	//std::string field;
-	AccessPtr accessor;
-	ExprPtr object;
+	AccessPtr object;
 	ExprPtr expression;
 
 	public:
 	//SetFieldStmt(std::string, ExprPtr obj, ExprPtr exp);
-	SetFieldStmt(AccessPtr acc, ExprPtr obj, ExprPtr exp);
+	SetFieldStmt(AccessPtr obj, ExprPtr exp);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	void get_variables(std::set<std::string> &vars);
 };

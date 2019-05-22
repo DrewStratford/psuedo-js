@@ -219,8 +219,8 @@ void Object::show(void){
 			std::cout << "UNIT" ;
 			break;
 		case CLOSURE:
-			std::cout << "CLOSURE";
-			//closure->print_env();
+			std::cout << "CLOSURE " << closure->func_ptr;
+			
 			break;
 	}
 }

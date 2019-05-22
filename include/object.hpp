@@ -83,8 +83,8 @@ class Object{
 
 class Closure{
 	private:
-	int func_ptr;
 	public:
+	int func_ptr;
 	std::vector<Object *> env;
 	Closure(int f_ptr);
 	int get_func(void);

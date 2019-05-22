@@ -171,6 +171,7 @@ ClosureCallExp::ClosureCallExp(
 	ExprPtr exp,
 	std::initializer_list<ExprPtr > args
 	){
+	this->is_setter = false;
 	this->closure = exp;
 	for(auto a : args){
 		this->arguments.push_back(a);
@@ -181,10 +182,10 @@ ClosureCallExp::ClosureCallExp(
 				ExprPtr exp,
 				std::vector<ExprPtr > args
 				){
-	this->closure = exp;
 	for(auto a : args){
 		this->arguments.push_back(a);
 	}
+	this->closure = exp;
 }
 
 void ClosureCallExp::emit(
@@ -201,10 +202,15 @@ void ClosureCallExp::emit(
 }
 
 void ClosureCallExp::get_variables(std::set<std::string> &vars){
-	closure->get_variables(vars);
 	for(auto arg : arguments){
 		arg->get_variables(vars);
 	}
+	closure->get_variables(vars);
+}
+
+void ClosureCallExp::set_setter(bool b){ }
+void ClosureCallExp::set_sub_expr(ExprPtr exp){
+	closure = exp;
 }
 
 FFICallExp::FFICallExp(
@@ -245,6 +251,7 @@ FieldAccessor::FieldAccessor(std::string f){
 }
 void FieldAccessor::emit(std::map<std::string, int> &context,
 					   std::vector<Instruction> &is){
+	sub_exp->emit(context, is);
 	if(is_setter){
 		is.push_back( insert_s( strdup(field.c_str())) );
 	} else{
@@ -252,13 +259,21 @@ void FieldAccessor::emit(std::map<std::string, int> &context,
 	}
 }
 
-// TODO: implement these.
+void FieldAccessor::set_sub_expr(ExprPtr exp){
+	sub_exp = exp;
+}
+
+void FieldAccessor::get_variables(std::set<std::string> &vars){
+	sub_exp->get_variables(vars);
+}
+
 ArrayAccessor::ArrayAccessor(ExprPtr exp){
 	this->exp = exp;
 }
 
 void ArrayAccessor::emit(std::map<std::string, int> &context,
 					   std::vector<Instruction> &is){
+	sub_exp->emit(context, is);
 	exp->emit(context, is);
 	if(is_setter){
 		is.push_back( insert_v() );
@@ -268,14 +283,18 @@ void ArrayAccessor::emit(std::map<std::string, int> &context,
 }
 
 void ArrayAccessor::get_variables(std::set<std::string> &vars){
-	//TODO: implement this
+	sub_exp->get_variables(vars);
+	exp->get_variables(vars);
+}
+
+void ArrayAccessor::set_sub_expr(ExprPtr exp){
+	sub_exp = exp;
 }
 
 /*
  * This now does the double duty of "getting" from arrays and
  * objects.
  */
-//GetFieldExp::GetFieldExp(std::string field, ExprPtr exp){
 GetFieldExp::GetFieldExp(AccessPtr acc, ExprPtr exp){
 	acc->set_setter(false);
 	this->accessor = acc;
@@ -391,13 +410,6 @@ void ClosureExp::emit(std::map<std::string, int> &context,
 		stack_pos++;
 	}
 
-	auto locals = std::vector<std::string>();
-	body->find_DeclareStmts(locals);
-	for(auto var : locals){
-		func_context[var] = stack_pos;
-		stack_pos++;
-	}
-
 	// adding captured vars to context
 	for(auto s : used){
 		if(context.count(s) > 0){
@@ -406,6 +418,22 @@ void ClosureExp::emit(std::map<std::string, int> &context,
 			stack_pos++;
 		}
 	}
+
+	auto locals = std::vector<std::string>();
+	body->find_DeclareStmts(locals);
+	for(auto var : locals){
+		func_context[var] = stack_pos;
+		stack_pos++;
+	}
+
+	// adding captured vars to context
+	//for(auto s : used){
+	//	if(context.count(s) > 0){
+	//		int addr = context[s];
+	//		func_context[s] = stack_pos;
+	//		stack_pos++;
+	//	}
+	//}
 	
 	auto function_is = std::vector<Instruction>();
 	function_is.push_back( label("anon_function") ); // push label
@@ -681,12 +709,9 @@ void FunctionStmt::emit(std::map<std::string, int> &context,
 	}
 }
 
-SetFieldStmt::SetFieldStmt(AccessPtr acc,
-						   ExprPtr obj,
+SetFieldStmt::SetFieldStmt(AccessPtr obj,
 						   ExprPtr exp){
-	//this->field = field;
-	acc->set_setter(true);
-	this->accessor = acc;
+	obj->set_setter(true);
 	this->object = obj;
 	this->expression = exp;
 }
@@ -695,13 +720,11 @@ void SetFieldStmt::emit(std::map<std::string, int> &context,
 						std::vector<Instruction> &is){
 	expression->emit(context, is);
 	object->emit(context, is);
-	accessor->emit(context, is);
 }
 
 void SetFieldStmt::get_variables(std::set<std::string> &vars){
 	object->get_variables(vars);
 	expression->get_variables(vars);
-	accessor->get_variables(vars);
 }
 
 LoadFFIStmt::LoadFFIStmt(std::string name){
