@@ -12,7 +12,7 @@ calls the function funcname from the lib shared object.
 
 
 Foreign libraries are written in cpp and should be compiled with
-	g++ -share mylib.cpp -o mylib.so
+	g++ -shared mylib.cpp -o mylib.so
 
 As dlopen is used, all functions you wish to be available should
 be marked with extern "C" to avoid name mangling.
