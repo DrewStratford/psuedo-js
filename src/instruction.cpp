@@ -5,7 +5,7 @@
 void step_instruction(Context * ctxt, 
 					Instruction i, 
 					int *ip, 
-					Object *globals){
+					Dictionary *globals){
 	int step = 1;
 	switch(i.op){
 		case LABEL: // essentially a nop
@@ -29,171 +29,189 @@ void step_instruction(Context * ctxt,
 			break;
 		case JMP_CND:
 			{
-			Object *a = ctxt->pop();
-			Object *b = new Object(1);
-			if(a->equals(b)) step = i.i;
+			ObjPtr a = ctxt->pop();
+			ObjPtr b = ObjPtr(1);
+			//if(a->equals(b)) step = i.i;
+			if(a.as_i() == 1) step = i.i;
 			}
 			break;
 		case JMP_CLOS:
 			// Pops a closure from the stack
 			// then jmps and links
 			{
-			Object *c = ctxt->pop();
-			if(c->get_type() == CLOSURE){
+			ObjPtr c = ctxt->pop();
+			Closure *clos = nullptr;
+			//if(c->get_type() == CLOSURE){
+			if(clos = c.as_c()){
 				//push captured vars (all fully eval'd)
-				Closure *clos = c->get_closure();
 				for(auto obj : clos->env){
 					ctxt->push(obj);
 				}
 				ctxt->link((*ip) + 1);
 				//convert absolute to relative
 				//address;
-				int addr = c->get_closure()->get_func() - *ip;
+				int addr = clos->get_func() - *ip;
 
 				step = addr; 
 			}
 			}
 			break;
 		case NEW_OBJ:
-			ctxt->push(new Object(OBJECT));
+			ctxt->push(ObjPtr(new Dictionary()));
 			break;
 		case NEW_VEC:
-			ctxt->push(new Object(VECTOR));
+			ctxt->push(ObjPtr(new ArrayList()));
 			break;
 		case NEW_UNIT:
-			ctxt->push(new Object(UNIT));
+			ctxt->push(ObjPtr());
 			break;
 		case NEW_CLOS:
 			{
 			Closure *c = new Closure(i.i);
-			ctxt->push(new Object(c));
+			ctxt->push(ObjPtr(c));
 			}
 			break;
 		case CLOS_CAP:
 			{
-			Object *clos = ctxt->pop();
-			Object *captured = ctxt->get(i.index);
-			clos->capture_var(captured);
+			ObjPtr clos = ctxt->pop();
+			ObjPtr captured = ctxt->get(i.index);
+			Closure *closure = nullptr;
+			if(closure = clos.as_c()){
+				closure->push_var(captured);
+			}
 			ctxt->push(clos);
 			}
 			break;
 		case LOAD_IMM_F:
-			ctxt->push(new Object(i.f));
+			ctxt->push(ObjPtr(i.f));
 			break;
 		case LOAD_IMM_I:
-			ctxt->push(new Object(i.i));
+			ctxt->push(ObjPtr(i.i));
 			break;
 		case LOAD_STK:
 			ctxt->push(ctxt->get(i.index));
 			break;
 		case LOAD_GLB:
-			ctxt->push(globals->lookup(i.str));
+			ctxt->push(globals->at(i.str));
 			break;
 		case SET_STK:
 			ctxt->put(ctxt->pop(), i.index);
 			break;
 		case SET_GLB:
-			globals->set(i.str, ctxt->pop());
+			globals->emplace(i.str, ctxt->pop());
 			break;
 		case LOOKUP_S:
 			{
-			Object *o = ctxt->pop();
-			ctxt->push(o->lookup(i.str));
+			//TODO
+			ObjPtr o = ctxt->pop();
+			Dictionary *dict = nullptr;
+			if(dict = o.as_dict())
+				ctxt->push(dict->at(i.str));
 			}
 			break;
 		case INSERT_S:
 			{
-			Object *obj = ctxt->pop();
-			Object *b = ctxt->pop();
-			obj->set(i.str, b);
+			ObjPtr obj = ctxt->pop();
+			ObjPtr b = ctxt->pop();
+			Dictionary *dict = nullptr;
+			if(dict = obj.as_dict())
+				dict->emplace(i.str, b);
+
 			}
 			break;
 		case LOOKUP_V:
 			{
-			Object *index = ctxt->pop();
-			Object *vector = ctxt->pop();
-			Object * out = vector->lookup_idx(index);
-			ctxt->push(out);
+			ObjPtr index = ctxt->pop();
+			ObjPtr vec = ctxt->pop();
+			ArrayList *arr = nullptr;
+			if(arr = vec.as_arr()){
+				ObjPtr out = arr->at(index.as_i());
+				ctxt->push(out);
+			}
 			}
 			break;
 		case INSERT_V:
 			{
-			Object *index = ctxt->pop();
-			Object *vector = ctxt->pop();
-			Object *adding = ctxt->pop();
-			vector->set_idx(index, adding);
+			ObjPtr index = ctxt->pop();
+			ObjPtr vec = ctxt->pop();
+			ObjPtr adding = ctxt->pop();
+			ArrayList *arr = nullptr;
+			if(arr = vec.as_arr())
+				arr->at(index.as_i()) = adding;
 			}
 			break;
 
 		case ADD:
 			{
-			Object *a = ctxt->pop();
-			Object *b = ctxt->pop();
+			ObjPtr a = ctxt->pop();
+			ObjPtr b = ctxt->pop();
 			ctxt->push(add(b, a));
 			}
 			break;
 		case MIN:
 			{
-			Object *a = ctxt->pop();
-			Object *b = ctxt->pop();
+			ObjPtr a = ctxt->pop();
+			ObjPtr b = ctxt->pop();
 			ctxt->push(sub(b, a));
 			}
 			break;
 		case MUL:
 			{
-			Object *a = ctxt->pop();
-			Object *b = ctxt->pop();
+			ObjPtr a = ctxt->pop();
+			ObjPtr b = ctxt->pop();
 			ctxt->push(mul(b, a));
 			}
 			break;
 		case DIV:
 			{
-			Object *a = ctxt->pop();
-			Object *b = ctxt->pop();
+			ObjPtr a = ctxt->pop();
+			ObjPtr b = ctxt->pop();
 			ctxt->push(div(b, a));
 			}
 			break;
 		case MOD:
 			{
-			Object *a = ctxt->pop();
-			Object *b = ctxt->pop();
+			ObjPtr a = ctxt->pop();
+			ObjPtr b = ctxt->pop();
 			ctxt->push(mod(b, a));
 			}
 			break;
 		case LT:
 			{
-			Object *a = ctxt->pop();
-			Object *b = ctxt->pop();
+			ObjPtr a = ctxt->pop();
+			ObjPtr b = ctxt->pop();
 			ctxt->push(lt(b, a));
 			}
 			break;
 		case LTE:
 			{
-			Object *a = ctxt->pop();
-			Object *b = ctxt->pop();
+			ObjPtr a = ctxt->pop();
+			ObjPtr b = ctxt->pop();
 			ctxt->push(lte(b, a));
 			}
 			break;
 		case GT:
 			{
-			Object *a = ctxt->pop();
-			Object *b = ctxt->pop();
+			ObjPtr a = ctxt->pop();
+			ObjPtr b = ctxt->pop();
 			ctxt->push(gt(b, a));
 			}
 			break;
 		case GTE:
 			{
-			Object *a = ctxt->pop();
-			Object *b = ctxt->pop();
+			ObjPtr a = ctxt->pop();
+			ObjPtr b = ctxt->pop();
 			ctxt->push(gte(b, a));
 			}
 			break;
 		case EQ:
 			{
-			Object *a = ctxt->pop();
-			Object *b = ctxt->pop();
-			bool c = b->equals(a);
-			ctxt->push(new Object(c));
+			ObjPtr a = ctxt->pop();
+			ObjPtr b = ctxt->pop();
+
+			//TODO: doesn't work for anything other than ints.
+			//bool c = b->equals(a);
+			ctxt->push(a.as_i() == b.as_i());
 			}
 			break;
 

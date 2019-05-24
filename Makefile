@@ -26,10 +26,16 @@ instruction.o\
 ast.o\
 parser.o
 
+OBJECTOBJS :=\
+object.o\
+
 all : lang
 
 parser : $(PARSOBJS)
 	$(CXX) -o parser  $(CFLAGS) $(PARSOBJS:%.o=build/%.o)
+
+obj : $(OBJECTOBJS)
+	$(CXX) -o obj -D OBJECT_MAIN $(CFLAGS) $(OBJECTOBJS:%.o=build/%.o)
 	
 
 lang : $(OBJS)

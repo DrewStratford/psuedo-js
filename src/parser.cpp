@@ -733,13 +733,13 @@ StmtPtr parse_statement(ParseInfo *p){
 /*
  * Creates closures for all the top level functions
  */
-void create_closures(std::vector<Instruction> &ins, Object *globals){
+void create_closures(std::vector<Instruction> &ins, Dictionary *globals){
 
 	// scan for label addresses
 	for(int ins_ptr = 0; ins_ptr < ins.size(); ins_ptr++){
 		Instruction instr = ins[ins_ptr];
 		if(instr.op == LABEL){
-			globals->set(instr.str, new Object(new Closure(ins_ptr)));
+			globals->emplace(instr.str, ObjPtr(new Closure(ins_ptr)));
 		}
 	}
 }
@@ -769,7 +769,7 @@ int main(int argc, char **argv){
 	auto c = std::map<std::string, int>();
 	stmt->emit(c, is);
 
-	auto globals = new Object(OBJECT);
+	auto globals = new Dictionary();
 	create_closures(is, globals);
 	process_labels(is);
 

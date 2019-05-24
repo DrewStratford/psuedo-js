@@ -8,7 +8,7 @@ class Context{
 	/*
 	 * Essentially a stack of call frames.
 	 */
-	std::list<std::vector<Object *>> stack;
+	std::list<std::vector<ObjPtr>> stack;
 
 	//stores the return address from jmp_lnk
 	std::vector<int> ret_stack;
@@ -22,11 +22,11 @@ class Context{
 
 	void show_frame(void);
 
-	Object *get(int);
-	void put(Object *, int);
+	ObjPtr get(int);
+	void put(ObjPtr, int);
 
-	void push(Object *);
-	Object *pop(void);
+	void push(ObjPtr);
+	ObjPtr pop(void);
 
 	//takes the number of arguments being pushed
 	void push_frame(int);
@@ -36,7 +36,7 @@ class Context{
 	 * Pops the frame and then pushes the object
 	 * onto the lower frame, returns the top of ret_stk.
 	 */
-	int ret(Object *);
+	int ret(ObjPtr);
 	void link(int lnk);
 
 	void garbage_collect(void);

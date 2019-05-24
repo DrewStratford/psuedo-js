@@ -5,132 +5,36 @@
 Object Object::object_list = Object();
 
 Object::Object(){
-	this->type = UNIT;
-}
-
-Object::Object(ObjType t){
-	this->type = t;
-	this->i = 0;
-
-	if(t == VECTOR){
-		this->vec = new std::vector<Object*>();
-	} else if(t == OBJECT){
-		this->obj = new std::map<std::string, Object*>();
-	}
-
 	Object::object_list.insert_after(this);
 }
 
-Object::Object(int i){
-	this->type = INT;
-	this->i = i;
 
-	Object::object_list.insert_after(this);
+void Object::show(void){
+	return;
 }
-
-Object::Object(float f){
-	this->type = FLOAT;
-	this->f = f;
-
-	Object::object_list.insert_after(this);
-}
-
-Object::Object(Closure *c){
-	type = CLOSURE;
-	closure = c;
-
-	Object::object_list.insert_after(this);
-}
-
-Object::~Object(){
-	if(!this->active){
-		//std::cout << "deleting: ";
-		//this->show();
-		switch(this->type){
-			case OBJECT:
-				delete this->obj;
-				break;
-			case VECTOR:
-				delete this->vec;
-				break;
-			case CLOSURE:
-				delete this->closure;
-				break;
-		}
-	}
-}
-
-enum ObjType Object::get_type(void){
-	return type;
-}
-
-Closure *Object::get_closure(void){
-	return closure;
-}
-
-Object *Object::size(void){
-	if(type == VECTOR){
-		return new Object((int)vec->size());
-		
-	}
-	return new Object();
-}
-
-bool Object::equals(Object *o){
-	if(o == nullptr || this->type != o->type) return false;
-
-	bool out = false;
-	switch(this->type){
-		case OBJECT: out = this->obj == o->obj; break;
-		case VECTOR: out = this->vec == o->vec; break;
-		case INT: out = this->i == o->i; break;
-		case FLOAT: out = this->f == o->f; break;
-		case UNIT: out = o->type == UNIT; break;
-	}
-	return out;	
-}
-
-void Object::capture_var(Object *o){
-	if(type == CLOSURE){
-		closure->push_var(o);
-	}
+void Object::mark(void){
+	this->active = true;
 }
 
 /*
  * Garbage collection stuff
  */
 
-
-void gc_sweep_vector(std::vector<Object*> *v){
-	std::vector<Object*> &vec = *v; //need to think about how efficient this is
-	for(Object * o : vec){
-		if(o == nullptr || o->active) continue;
-		o->active = true;
-		switch(o->type){
-			case VECTOR:
-				gc_sweep_vector(o->vec);
-				break;
-			case OBJECT:
-				std::cout << "OBJECT SWEEP\n";
-				gc_sweep_map(o->obj);
-				break;
+void gc_sweep_vector(std::vector<ObjPtr> &vec){
+	for(auto o : vec){
+		Object *obj = nullptr;
+		if(obj = o.as_o()){
+			obj->mark();
 		}
 	}
 }
 
-void gc_sweep_map(std::map<std::string, Object*> *m){
-	auto& map = *m;
+void gc_sweep_map(std::map<std::string, ObjPtr> &map){
 	for(auto p : map){
-		Object * o = p.second;
-		if(o == nullptr || o->active) continue;
-		o->active = true;
-		switch(o->type){
-			case VECTOR:
-				gc_sweep_vector(o->vec);
-				break;
-			case OBJECT:
-				gc_sweep_map(o->obj);
-				break;
+		ObjPtr o = p.second;
+		Object *obj = nullptr;
+		if(obj = o.as_o()){
+			obj->mark();
 		}
 	}
 }
@@ -142,7 +46,6 @@ void Object::gc_delete(void){
 
 	while(o != nullptr){
 		Object *next = o->next;
-
 		if(o->active){
 			o->active = false;
 			active++;
@@ -151,12 +54,12 @@ void Object::gc_delete(void){
 			delete o;
 			freed++;
 		}
-
 		o = next;
 	}
 
 	std::cout << "gc_delete: freed " << freed << ", active " << active << std::endl;
 }
+
 //////////////////////////////////////////////////
 
 /*
@@ -184,142 +87,78 @@ void Object::remove(void){
 
 //////////////////////////////////////////////////
 
-void Object::show(void){
-	switch(this->type){
-		case INT:
-			std::cout << this->i;
-			break;
-		case FLOAT:
-			std::cout << this->f;
-			break;
-		case OBJECT:
-			{
-				std::cout << "OBJECT ..." << std::endl;
-				auto& map = *this->obj;
-				for(auto pair : map){
-					std::cout << pair.first << " -> ";
-					pair.second->show();
-					std::cout << std::endl;
-					
-				}
-			}
-			break;
-		case VECTOR:
-			{
-				std::cout << "[" ;
-				auto& map = *this->vec;
-				for(auto o : map){
-					o->show();
-					std::cout << ", ";
-				}
-				std::cout << "]" ;
-			}
-			break;
-		case UNIT:
-			std::cout << "UNIT" ;
-			break;
-		case CLOSURE:
-			std::cout << "CLOSURE " << closure->func_ptr;
-			
-			break;
+template<>
+void ArrayList::mark(void){
+	if(active) return;
+	active = true;
+	for(auto pos = begin(); pos < end(); pos++){
+		ObjPtr o = *pos;
+		Object *obj = nullptr;
+		if(obj = o.as_o()){
+			obj->mark();
+		}
 	}
 }
 
-void Object::set(std::string str, Object *o){
-	if(this->type != OBJECT) return ;
-	auto &m = *this->obj;
-	m[str] = o;
-}
+template<>
+void ArrayList::show(void){
+	printf("[");
+	for(auto pos = begin(); pos < end(); pos++){
+		ObjPtr o = *pos;
+		o.show();
+		if(pos + 1 != end())
+			printf(", ");
 
-Object *Object::lookup(std::string str){
-	if(this->type == OBJECT){
-		return this->obj->at(str);
-	} else if(type == VECTOR && str == "size"){
-		return size();
 	}
-	return nullptr;
+	printf("]");
 }
 
-void Object::set_idx(Object *idx, Object *o){
-	if(this->type != VECTOR && idx->type != INT) return ;
-	auto &m = *this->vec;
-	m[idx->i] = o;
-}
-
-Object *Object::lookup_idx(Object *idx){
-	if(this->type != VECTOR && idx->type != INT) return nullptr;
-	return this->vec->at(idx->i);
-}
-
-Object * add(Object *a, Object *b){
-	if(a->type == INT && b->type == INT) return new Object(a->i+ b->i);
-	if(a->type == FLOAT && b->type == FLOAT) return new Object(a->f+ b->f);
-	if(a->type == VECTOR){
-		a->vec->push_back(b);
-		return a;
+template<>
+void Dictionary::show(void){
+	Dictionary *hack = this;
+	printf("{");
+	for(auto pos = begin(); pos != hack->end(); pos++){
+		auto pair = *pos;
+		printf("%s : ", pair.first.c_str());
+		pair.second.show();
+		printf(", ");
 	}
-	if(b->type == VECTOR){
-		b->vec->insert(b->vec->begin(), a);
-		return b;
+	printf("}");
+}
+
+template<>
+void Dictionary::mark(void){
+	if(active) return;
+	active = true;
+
+	Dictionary *hack = this;
+	for(auto pos = begin(); pos != hack->end(); pos++){
+		auto pair = *pos;
+		Object *obj = nullptr;
+		if(obj = pair.second.as_o()){
+			obj->mark();
+		}
 	}
-	return new Object();
 }
-
-
-Object * sub(Object *a, Object *b){
-	if(a->type == INT && b->type == INT) return new Object(a->i- b->i);
-	if(a->type == FLOAT && b->type == FLOAT) return new Object(a->f- b->f);
-	return new Object();
-}
-
-Object * mul(Object *a, Object *b){
-	if(a->type == INT && b->type == INT) return new Object(a->i* b->i);
-	if(a->type == FLOAT && b->type == FLOAT) return new Object(a->f* b->f);
-	return new Object();
-}
-
-Object * div(Object *a, Object *b){
-	if(a->type == INT && b->type == INT) return new Object(a->i/ b->i);
-	if(a->type == FLOAT && b->type == FLOAT) return new Object(a->f/ b->f);
-	return new Object();
-}
-
-Object * mod(Object *a, Object *b){
-	if(a->type == INT && b->type == INT) return new Object(a->i% b->i);
-	return new Object();
-}
-
-Object * lt(Object *a, Object *b){
-	if(a->type == INT && b->type == INT) return new Object(a->i < b->i);
-	if(a->type == FLOAT && b->type == FLOAT) return new Object(a->f < b->f);
-	return new Object();
-}
-
-Object * lte(Object *a, Object *b){
-	if(a->type == INT && b->type == INT) return new Object(a->i <= b->i);
-	if(a->type == FLOAT && b->type == FLOAT) return new Object(a->f <= b->f);
-	return new Object();
-}
-
-Object * gt(Object *a, Object *b){
-	if(a->type == INT && b->type == INT) return new Object(a->i > b->i);
-	if(a->type == FLOAT && b->type == FLOAT) return new Object(a->f > b->f);
-	return new Object();
-}
-
-Object * gte(Object *a, Object *b){
-	if(a->type == INT && b->type == INT) return new Object(a->i >= b->i);
-	if(a->type == FLOAT && b->type == FLOAT) return new Object(a->f >= b->f);
-	return new Object();
-}
-
 
 /////////////////////////////////////////////////////
 // Closure stuff.
 /////////////////////////////////////////////////////
 
 Closure::Closure(int f_ptr){
-	this->func_ptr = f_ptr;
+	func_ptr = f_ptr;
+}
+
+void Closure::mark(void){
+	if(active) return;
+	active = true;
+	for(auto o : env){
+		o.show();
+	}
+}
+
+void Closure::show(void){
+	std::cout << "CLOSURE " << func_ptr;
 }
 
 int Closure::get_func(void){
@@ -329,10 +168,205 @@ int Closure::get_func(void){
 void Closure::print_env(void){
 	for(auto o : env){
 		printf("\tcap: ");
-		o->show();
+		o.show();
 	}
 }
 
-void Closure::push_var(Object *o){
+void Closure::push_var(ObjPtr o){
 	env.push_back(o);
 }
+
+/*
+ * ObjPtr constructors
+ */
+
+void ObjPtr::show(void){
+	switch(type){
+		case INT:
+			printf("%d", as_i());
+			break;
+		case FLOAT:
+			printf("%f", as_f());
+			break;
+		default:
+		{
+			Object *o= nullptr;
+			if(o = as_o()){
+				o->show();
+			}
+		}
+	}
+}
+
+ObjPtr::object_ptr(void){
+	this->type = INT; //TODO: UNIT?
+	this->data = 0;
+}
+
+ObjPtr::object_ptr(int64_t i){
+	this->type = INT;
+	this->data = i;
+}
+
+ObjPtr::object_ptr(int i){
+	this->type = INT;
+	this->data = i;
+}
+
+ObjPtr::object_ptr(float f){
+	this->type = FLOAT;
+	this->data = f;
+}
+
+ObjPtr::object_ptr(Closure *c){
+	this->type = CLOSURE;
+	this->data = (int64_t)c >> 4;
+}
+
+ObjPtr::object_ptr(Dictionary *c){
+	this->type = DICT;
+	this->data = (int64_t)c >> 4;
+}
+
+ObjPtr::object_ptr(ArrayList *c){
+	this->type = ARRAY;
+	this->data = (int64_t)c >> 4;
+}
+
+int64_t ObjPtr::as_i(void){
+	if(this->type == INT) return (int64_t)this->data;
+	return 0;
+}
+
+float ObjPtr::as_f(void){
+	if(this->type == FLOAT) return (float)this->data;
+	return 0;
+}
+
+Object *ObjPtr::as_o(void){
+	void* ptr = (void*)(data << 4);
+	if(type == DICT || type == CLOSURE || type == ARRAY)
+		return (Object*)ptr;
+	return nullptr;
+}
+
+Closure *ObjPtr::as_c(void){
+	if(this->type == CLOSURE) return (Closure*)(data << 4);
+	return nullptr;
+}
+ArrayList *ObjPtr::as_arr(void){
+	if(this->type == ARRAY) return (ArrayList*)(data << 4);
+	return nullptr;
+}
+Dictionary *ObjPtr::as_dict(void){
+	if(this->type == DICT) return (Dictionary*)(data << 4);
+	return nullptr;
+}
+
+/*
+ * Arithmetic etc
+ */
+ObjPtr add(ObjPtr a, ObjPtr b){
+	ArrayList *arr = nullptr;
+	if(a.type == INT && b.type == INT) 
+		return  ObjPtr((int64_t) (a.as_i() + b.as_i()));
+	if(a.type == FLOAT && b.type == FLOAT) 
+		return  ObjPtr(a.as_f() + b.as_f());
+	if(arr = a.as_arr()){
+		arr->push_back(b);
+		return a;
+	}
+	if(arr = b.as_arr()){
+		arr->insert(arr->begin(), a);
+		return b;
+	}
+	return  ObjPtr();
+}
+
+ObjPtr sub(ObjPtr a, ObjPtr b){
+	if(a.type == INT && b.type == INT) 
+		return ObjPtr(a.as_i() - b.as_i());
+	if(a.type == FLOAT && b.type == FLOAT) 
+		return ObjPtr(a.as_f() - b.as_f());
+	return ObjPtr();
+}
+
+ObjPtr mul(ObjPtr a, ObjPtr b){
+	if(a.type == INT && b.type == INT) 
+		return ObjPtr(a.as_i() * b.as_i());
+	if(a.type == FLOAT && b.type == FLOAT) 
+		return ObjPtr(a.as_f() * b.as_f());
+	return ObjPtr();
+}
+
+ObjPtr div(ObjPtr a, ObjPtr b){
+	if(a.type == INT && b.type == INT) 
+		return ObjPtr(a.as_i() / b.as_i());
+	if(a.type == FLOAT && b.type == FLOAT) 
+		return ObjPtr(a.as_f() / b.as_f());
+	return ObjPtr();
+}
+
+ObjPtr mod(ObjPtr a, ObjPtr b){
+	if(a.type == INT && b.type == INT) 
+		return  ObjPtr(a.as_i() % b.as_i());
+	return  ObjPtr();
+}
+
+ObjPtr lt(ObjPtr a, ObjPtr b){
+	if(a.type == INT && b.type == INT) 
+		return ObjPtr(a.as_i() < b.as_i());
+	if(a.type == FLOAT && b.type == FLOAT)
+		return ObjPtr(a.as_f() < b.as_f());
+	return ObjPtr();
+}
+
+ObjPtr lte(ObjPtr a, ObjPtr b){
+	if(a.type == INT && b.type == INT) 
+		return ObjPtr(a.as_i() <= b.as_i());
+	if(a.type == FLOAT && b.type == FLOAT) 
+		return ObjPtr(a.as_f() <= b.as_f());
+	return ObjPtr();
+}
+
+ObjPtr gt(ObjPtr a, ObjPtr b){
+	if(a.type == INT && b.type == INT) 
+		return ObjPtr(a.as_i() > b.as_i());
+	if(a.type == FLOAT && b.type == FLOAT) 
+		return ObjPtr(a.as_f() > b.as_f());
+	return ObjPtr();
+}
+
+ObjPtr gte(ObjPtr a, ObjPtr b){
+	if(a.type == INT && b.type == INT) 
+		return ObjPtr(a.as_i() >= b.as_i());
+	if(a.type == FLOAT && b.type == FLOAT) 
+		return ObjPtr(a.as_f() >= b.as_f());
+	return ObjPtr();
+}
+
+
+/*
+#include <cstdio>
+int main(){
+	printf("hello\n");
+	ObjPtr a = ObjPtr(10);
+	ObjPtr b = ObjPtr(22);
+	ObjPtr c = add(a, b);
+	printf("%d\n", a.as_i());
+	printf("%d\n", b.as_i());
+	printf("10 + 22 = %d\n", c.as_i());
+	ObjPtr clos = ObjPtr(new Closure(0));
+	clos.as_o()->show();
+	ArrayList* arr = new ArrayList();
+	Dictionary* dict = new Dictionary();
+	dict->emplace("foo", c);
+	arr->push_back(a);
+	arr->push_back(clos);
+	arr->push_back(b);
+	arr->mark();
+	arr->show();
+	dict->show();
+	return 0;
+}
+*/

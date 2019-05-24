@@ -73,7 +73,7 @@ typedef struct Instruction{
 	};
 } Instruction;
 
-void step_instruction(Context *, Instruction, int*, Object *);
+void step_instruction(Context *, Instruction, int*, Dictionary *);
 Instruction show_frame(void);
 Instruction push_frame(int);
 Instruction ret(void);

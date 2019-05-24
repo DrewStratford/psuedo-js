@@ -19,11 +19,11 @@ void Context::push_frame(int arg_count){
 	 * in the previous call frame so variable lookups work.
 	 */
 	//puts("pushing frame");
-	std::vector<Object *> args;
+	std::vector<ObjPtr > args;
 	for(int i = 0; i < arg_count; i++){
 		args.push_back(pop());
 	}
-	stack.push_front(std::vector<Object*>());
+	stack.push_front(std::vector<ObjPtr>());
 
 	for(int i = args.size()-1; i >= 0; i--){
 		push(args[i]);
@@ -36,17 +36,17 @@ void Context::pop_frame(void){
 	stack.pop_front();
 }
 
-void Context::push(Object *o){
-	std::vector<Object *> &callframe = this->stack.front();
+void Context::push(ObjPtr o){
+	std::vector<ObjPtr> &callframe = this->stack.front();
 	callframe.push_back(o);
 }
 
-Object *Context::pop(void){
-	std::vector<Object *> &callframe = stack.front();
+ObjPtr Context::pop(void){
+	std::vector<ObjPtr> &callframe = stack.front();
 	if(callframe.empty()){
-		return new Object(UNIT);
+		return ObjPtr();
 	}
-	Object *o = callframe[callframe.size()-1];
+	ObjPtr o = callframe[callframe.size()-1];
 	callframe.pop_back();
 	return o;
 }
@@ -55,7 +55,7 @@ void Context::link(int lnk){
 	ret_stack.push_back(lnk);
 }
 
-int Context::ret(Object *o){
+int Context::ret(ObjPtr o){
 	int out = -1;
 	if(!ret_stack.empty()){
 		out = ret_stack[ret_stack.size()-1];
@@ -66,24 +66,24 @@ int Context::ret(Object *o){
 	return out;
 }
 
-Object *Context::get(int i){
-	std::vector<Object *> &callframe = this->stack.front();
+ObjPtr Context::get(int i){
+	std::vector<ObjPtr > &callframe = this->stack.front();
 	if(i >= 0 && i < callframe.size()){
 		return callframe[i];
 	}
-	return new Object(UNIT);
+	return ObjPtr();
 }
 
-void Context::put(Object *o, int i){
-	std::vector<Object *> &callframe = this->stack.front();
+void Context::put(ObjPtr o, int i){
+	std::vector<ObjPtr> &callframe = this->stack.front();
 	if(i >= 0 && i < callframe.size()){
 		callframe[i] = o;
 	}
 }
 
 void Context::garbage_collect(void){
-	for(std::vector<Object*> &v : stack){
-		gc_sweep_vector(&v);
+	for(std::vector<ObjPtr> &v : stack){
+		gc_sweep_vector(v);
 	}
 
 	Object::gc_delete();
@@ -91,10 +91,10 @@ void Context::garbage_collect(void){
 
 
 void Context::show_frame(void){
-	std::vector<Object *> &callframe = this->stack.front();
+	std::vector<ObjPtr> &callframe = this->stack.front();
 	std::cout << "{\n";
 	for(auto o : callframe){
-		o->show();
+		o.show();
 	}
 	std::cout << "}\n";
 }
@@ -128,8 +128,8 @@ bool Context::ffi_call_sym(std::string sym){
 	}
 
 	void *handle = ffi_handles[module];
-	void (*func)(std::vector<Object*>&)  = 
-		(void (*)(std::vector<Object*>&))dlsym(handle, strdup(symbol.c_str()));
+	void (*func)(std::vector<ObjPtr>&)  = 
+		(void (*)(std::vector<ObjPtr>&))dlsym(handle, strdup(symbol.c_str()));
 
 	char *error = dlerror();
 	if(error){
