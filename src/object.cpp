@@ -203,15 +203,17 @@ ObjPtr::object_ptr(void){
 	this->data = 0;
 }
 
-ObjPtr::object_ptr(int64_t i){
+ObjPtr::object_ptr(int32_t i){
 	this->type = INT;
 	this->data = i;
 }
 
+/*
 ObjPtr::object_ptr(int i){
 	this->type = INT;
 	this->data = i;
 }
+*/
 
 ObjPtr::object_ptr(float f){
 	this->type = FLOAT;
@@ -233,8 +235,8 @@ ObjPtr::object_ptr(ArrayList *c){
 	this->data = (int64_t)c >> 4;
 }
 
-int64_t ObjPtr::as_i(void){
-	if(this->type == INT) return (int64_t)this->data;
+int32_t ObjPtr::as_i(void){
+	if(this->type == INT) return (int32_t)this->data;
 	return 0;
 }
 
@@ -269,7 +271,7 @@ Dictionary *ObjPtr::as_dict(void){
 ObjPtr add(ObjPtr a, ObjPtr b){
 	ArrayList *arr = nullptr;
 	if(a.type == INT && b.type == INT) 
-		return  ObjPtr((int64_t) (a.as_i() + b.as_i()));
+		return  ObjPtr((int32_t) (a.as_i() + b.as_i()));
 	if(a.type == FLOAT && b.type == FLOAT) 
 		return  ObjPtr(a.as_f() + b.as_f());
 	if(arr = a.as_arr()){

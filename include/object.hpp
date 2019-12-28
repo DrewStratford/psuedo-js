@@ -96,21 +96,21 @@ typedef Dictionary_<std::string, ObjPtr> Dictionary;
 /*
  * A 64 bit wide struct that is either
  * a pointer to an Object or a primitive
- * value like a 60bit Integer.
+ * value like a 32 bit Integer.
  */
 struct object_ptr{
 	uint64_t data : 60;
 	enum PointerType type : 4;
 
 	object_ptr(void); 
-	object_ptr(int64_t i);
-	object_ptr(int i);
+	object_ptr(int32_t i);
+	//object_ptr(int i);
 	object_ptr(float f);
 	object_ptr(Closure *);
 	object_ptr(Dictionary *);
 	object_ptr(ArrayList *);
 
-	int64_t as_i(void);
+	int32_t as_i(void);
 	float as_f(void);
 	Object *as_o(void);
 	Closure *as_c(void);

@@ -31,7 +31,6 @@ void step_instruction(Context * ctxt,
 			{
 			ObjPtr a = ctxt->pop();
 			ObjPtr b = ObjPtr(1);
-			//if(a->equals(b)) step = i.i;
 			if(a.as_i() == 1) step = i.i;
 			}
 			break;
@@ -41,7 +40,6 @@ void step_instruction(Context * ctxt,
 			{
 			ObjPtr c = ctxt->pop();
 			Closure *clos = nullptr;
-			//if(c->get_type() == CLOSURE){
 			if(clos = c.as_c()){
 				//push captured vars (all fully eval'd)
 				for(auto obj : clos->env){
@@ -98,7 +96,7 @@ void step_instruction(Context * ctxt,
 			ctxt->put(ctxt->pop(), i.index);
 			break;
 		case SET_GLB:
-			globals->emplace(i.str, ctxt->pop());
+			globals->insert_or_assign(i.str, ctxt->pop());
 			break;
 		case LOOKUP_S:
 			{

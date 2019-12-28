@@ -1,6 +1,6 @@
 VPATH = src include build
 
-CFLAGS ?= -g -Wl,--export-dynamic
+CFLAGS ?= -g -std=c++17 -Wl,--export-dynamic
 NAME ?= Language
 
 
