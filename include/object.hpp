@@ -16,7 +16,6 @@ typedef struct object_ptr ObjPtr;
 // we have 4 bits to store this in so we can have
 // 8 fundamental types.
 enum PointerType {INT, FLOAT, CLOSURE, ARRAY, DICT} ;
-//enum ObjType {INT, FLOAT, OBJECT, VECTOR, UNIT, CLOSURE};
 
 /*
  * Base class for all heap allocated data structures.
@@ -104,7 +103,6 @@ struct object_ptr{
 
 	object_ptr(void); 
 	object_ptr(int32_t i);
-	//object_ptr(int i);
 	object_ptr(float f);
 	object_ptr(Closure *);
 	object_ptr(Dictionary *);

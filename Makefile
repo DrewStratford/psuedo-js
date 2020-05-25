@@ -29,7 +29,7 @@ parser.o
 OBJECTOBJS :=\
 object.o\
 
-all : lang
+all : parser
 
 parser : $(PARSOBJS)
 	$(CXX) -o parser  $(CFLAGS) $(PARSOBJS:%.o=build/%.o)

@@ -208,7 +208,6 @@ void step_instruction(Context * ctxt,
 			ObjPtr b = ctxt->pop();
 
 			//TODO: doesn't work for anything other than ints.
-			//bool c = b->equals(a);
 			ctxt->push(a.as_i() == b.as_i());
 			}
 			break;
@@ -222,7 +221,6 @@ void step_instruction(Context * ctxt,
 			ctxt->link((*ip) + 1);
 
 			ctxt->ffi_call_sym(i.str);
-			//return
 			ctxt->ret(ctxt->pop());
 			break;
 		case FFI_CALL:

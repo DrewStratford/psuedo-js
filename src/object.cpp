@@ -208,13 +208,6 @@ ObjPtr::object_ptr(int32_t i){
 	this->data = i;
 }
 
-/*
-ObjPtr::object_ptr(int i){
-	this->type = INT;
-	this->data = i;
-}
-*/
-
 ObjPtr::object_ptr(float f){
 	this->type = FLOAT;
 	this->data = f;
