@@ -16,6 +16,9 @@ void step_instruction(Context * ctxt,
 		case PUSH_FRAME:
 			ctxt->push_frame(i.i);
 			break;
+		case DROP:
+			ctxt->pop();
+			break;
 		case RET:
 			*ip = ctxt->ret(ctxt->pop());
 			step = 0;
@@ -245,6 +248,9 @@ Instruction push_frame(int i){
 }
 Instruction ret(void){
 	return {.op = RET};
+}
+Instruction drop(void){
+	return {.op = DROP};
 }
 
 Instruction jmp_cnd(int i){

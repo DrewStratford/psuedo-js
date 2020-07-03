@@ -11,6 +11,8 @@ enum OpCode{
 	SHOW_FRAME,
 	PUSH_FRAME,
 	RET,
+	DROP,
+
 
 	LABEL, //NOP stores a label
 
@@ -77,6 +79,7 @@ void step_instruction(Context *, Instruction, int*, Dictionary *);
 Instruction show_frame(void);
 Instruction push_frame(int);
 Instruction ret(void);
+Instruction drop(void);
 
 Instruction label(char *);
 

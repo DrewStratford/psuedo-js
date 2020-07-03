@@ -197,6 +197,15 @@ class Statement{
 };
 using StmtPtr = std::shared_ptr<Statement>;
 
+class ExpressionStmt : public Statement{
+	private:
+	ExprPtr exp;
+	public:
+	ExpressionStmt(ExprPtr);
+	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
+	void get_variables(std::set<std::string> &vars);
+};
+
 class ReturnStmt : public Statement{
 	private:
 	ExprPtr exp;

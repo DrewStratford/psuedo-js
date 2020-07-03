@@ -569,6 +569,17 @@ StmtPtr parse_let(ParseInfo *p){
 	  return nullptr;
 }
 
+StmtPtr parse_bare_expression(ParseInfo *p){
+	ParseInfo working = *p;
+	ExprPtr expr0 = nullptr;
+	if((expr0 = parse_Expression(&working)) &&
+	   working.match(";")){
+		*p = working;
+		return MAKE_STMT(new ExpressionStmt(expr0));
+	}
+	return nullptr;
+}
+
 StmtPtr parse_setfield(ParseInfo *p){
 	ParseInfo working = *p;
 	std::vector<AccessPtr> accs;
@@ -726,6 +737,7 @@ StmtPtr parse_statement(ParseInfo *p){
 	if(out = parse_let(p)) return out;
 	if(out = parse_assign(p)) return out;
 	if(out = parse_block(p)) return out;
+	if(out = parse_bare_expression(p)) return out;
 
 	return nullptr;
 }

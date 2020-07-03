@@ -460,6 +460,20 @@ void Statement::get_variables(std::set<std::string> &vars){
 	//default: does nothing.
 }
 
+ExpressionStmt::ExpressionStmt(ExprPtr exp){
+	this->exp = exp;
+}
+
+void ExpressionStmt::emit(std::map<std::string, int> &context,
+					  std::vector<Instruction> &is){
+	this->exp->emit(context, is);
+	is.push_back( drop() );
+}
+
+void ExpressionStmt::get_variables(std::set<std::string> &vars){
+	exp->get_variables(vars);
+}
+
 ReturnStmt::ReturnStmt(ExprPtr exp){
 	this->exp = exp;
 }
