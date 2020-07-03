@@ -116,8 +116,10 @@ void step_instruction(Context * ctxt,
 			ObjPtr b = ctxt->pop();
 			Dictionary *dict = nullptr;
 			if(dict = obj.as_dict())
+				//TODO: We erase here because emplace doesn't overwrite,
+				// This could probably be improved by using iterators.
+				dict->erase(i.str);
 				dict->emplace(i.str, b);
-
 			}
 			break;
 		case LOOKUP_V:
