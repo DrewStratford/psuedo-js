@@ -475,14 +475,14 @@ ExprPtr  parse_object(ParseInfo *p){
 
 ExprPtr parse_string(ParseInfo *p){
 	ParseInfo working = *p;
-	std::vector<ExprPtr> chars;
+	std::vector<char> chars;
 
 	if(!working.match("\""))
 		return nullptr;
 	
 	char c = '\0';
 	while(working.character(&c)){
-		chars.push_back( MAKE_EXPR(new IntExp((int)c)));
+		chars.push_back(c);
 	}
 
 	if(!working.match("\""))
@@ -490,7 +490,7 @@ ExprPtr parse_string(ParseInfo *p){
 	
 	*p = working;
 
-	return MAKE_EXPR(new VectorExp(chars));
+	return MAKE_EXPR(new StringExp(chars));
 }
 
 ExprPtr  parse_vector(ParseInfo *p){

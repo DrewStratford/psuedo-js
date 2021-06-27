@@ -64,6 +64,17 @@ void VectorExp::get_variables(std::set<std::string> &vars){
 	}
 }
 
+StringExp::StringExp(std::vector<char>& cs){
+	str = std::string(cs.begin(), cs.end());
+}
+
+void StringExp::emit(std::map<std::string, int> &context,
+					 std::vector<Instruction> &is){
+	is.push_back( new_string(str.c_str()) );
+}
+
+void StringExp::get_variables(std::set<std::string> &vars){ }
+
 VarExp::VarExp(char *s){
 	this->var = s;
 }

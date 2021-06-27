@@ -187,7 +187,7 @@ void StringObject::mark(void){
 }
 
 void StringObject::show(void){
-	puts(this->str.c_str());
+	printf("\"%s\"", this->str.c_str());
 }
 
 StringObject* StringObject::add(StringObject* object){
@@ -263,7 +263,7 @@ float ObjPtr::as_f(void){
 
 Object *ObjPtr::as_o(void){
 	void* ptr = (void*)(data << 4);
-	if(type == DICT || type == CLOSURE || type == ARRAY)
+	if(type == DICT || type == CLOSURE || type == ARRAY || type == STRING)
 		return (Object*)ptr;
 	return nullptr;
 }

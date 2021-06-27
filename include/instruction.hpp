@@ -26,6 +26,7 @@ enum OpCode{
 	NEW_VEC,
 	NEW_CLOS,
 	NEW_UNIT,
+	NEW_STRING,
 
 	CLOS_CAP, //puts stack address variable into closure
 
@@ -95,6 +96,7 @@ Instruction new_obj(void);
 Instruction new_vec(void);
 Instruction new_unit(void);
 Instruction new_closure(int);
+Instruction new_string(const char*);
 
 Instruction closure_capture(int);
 

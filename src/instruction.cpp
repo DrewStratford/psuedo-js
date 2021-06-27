@@ -1,6 +1,7 @@
 #include "instruction.hpp"
 
 #include <iostream>
+#include <cstring>
 
 void step_instruction(Context * ctxt, 
 					Instruction i, 
@@ -65,6 +66,9 @@ void step_instruction(Context * ctxt,
 			break;
 		case NEW_UNIT:
 			ctxt->push(ObjPtr());
+			break;
+		case NEW_STRING:
+			ctxt->push(ObjPtr(new StringObject(std::string(i.str))));
 			break;
 		case NEW_CLOS:
 			{
@@ -304,6 +308,13 @@ Instruction new_vec(void){
 
 Instruction new_unit(void){
 	return {.op = NEW_UNIT};
+}
+
+Instruction new_string(const char* str){
+	Instruction out;
+	out.op = NEW_STRING;
+	out.str = strdup(str);
+	return out;
 }
 
 Instruction new_closure(int ip){

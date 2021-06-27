@@ -58,6 +58,15 @@ class VectorExp : public Expression{
 	void get_variables(std::set<std::string> &vars);
 };
 
+class StringExp : public Expression{
+	std::string str;
+
+	public:
+	StringExp(std::vector<char>&);
+	void emit(std::map<std::string, int>&, std::vector<Instruction>&);
+	void get_variables(std::set<std::string> &vars);
+};
+
 
 class VarExp : public Expression{
 	private:
