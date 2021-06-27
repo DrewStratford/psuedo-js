@@ -56,22 +56,48 @@ class ParseInfo{
 		return true;
 	}
 
-	//TODO: implement escape codes;
 	bool character(char *out){
-		*out = 0;
+		int i = index;
+		if( i >= input.size())
+			return false;
+		if(input[i] == '\'')
+			return false;
+		if(input[i] == '"')
+			return false;
 
-		int i = skip_whitespace();
-		if(i+3 < (input.size()) &&
-			input[i] == '\'' &&
-			input[i+2] == '\''
-		  ){
-
-			*out = input[i+1];
-			index = i+3;
+		if(input[i] == '\\'){
+			i++;
+			if( i >= input.size())
+				return false;
+			switch(input[i]){
+				case '0':
+					*out = '\0';
+					break;
+				case 't':
+					*out = '\t';
+					break;
+				case 'n':
+					*out = '\n';
+					break;
+				case '\'':
+					*out = '\'';
+					break;
+				case '"':
+					*out = '"';
+					break;
+				case '\\':
+					*out = '\\';
+					break;
+				default:
+					return false;
+			}
+			index = i+1;
 			return true;
 		}
-		
-		return false;
+
+		index++;
+		*out = input[i];
+		return true;
 	}
 
 	bool string(std::string *str){
@@ -394,16 +420,17 @@ ExprPtr parse_fieldaccess(ParseInfo *p){
 	return nullptr;
 }
 
-ExprPtr  parse_char(ParseInfo *p){
-	int c;
+ExprPtr parse_char(ParseInfo *p){
+	char c;
 	ParseInfo working = *p;
 
-	if(working.character((char *)&c)){
+	if(working.match("'") && working.character(&c) && working.match("'")){
 		*p = working;
-		return MAKE_EXPR(new IntExp(c));
+		return MAKE_EXPR(new IntExp((int)c));
 	}
 	return nullptr;
 }
+
 ExprPtr  parse_int(ParseInfo *p){
 	int i;
 	ParseInfo working = *p;
@@ -446,19 +473,24 @@ ExprPtr  parse_object(ParseInfo *p){
 	return nullptr;
 }
 
-ExprPtr  parse_string(ParseInfo *p){
+ExprPtr parse_string(ParseInfo *p){
 	ParseInfo working = *p;
-	std::string str;
-	std::vector<ExprPtr > chars;
+	std::vector<ExprPtr> chars;
 
-	if(working.string(&str)){
-		*p = working;
-		for(auto c : str){
-			chars.push_back( MAKE_EXPR(new IntExp(c)) );
-		}
-		return MAKE_EXPR(new VectorExp(chars));
+	if(!working.match("\""))
+		return nullptr;
+	
+	char c = '\0';
+	while(working.character(&c)){
+		chars.push_back( MAKE_EXPR(new IntExp((int)c)));
 	}
-	return nullptr;
+
+	if(!working.match("\""))
+		return nullptr;
+	
+	*p = working;
+
+	return MAKE_EXPR(new VectorExp(chars));
 }
 
 ExprPtr  parse_vector(ParseInfo *p){
