@@ -70,10 +70,10 @@ class StringExp : public Expression{
 
 class VarExp : public Expression{
 	private:
-	char * var;
+	std::string var_name;
 
 	public:
-	VarExp(char *);
+	VarExp(const std::string&);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	void get_variables(std::set<std::string> &vars);
 };
@@ -227,10 +227,10 @@ class ReturnStmt : public Statement{
 class DeclareStmt : public Statement{
 	private:
 	ExprPtr exp;
-	char *var;
+	std::string var_name;
 
 	public:
-	DeclareStmt(ExprPtr , char *);
+	DeclareStmt(ExprPtr , const std::string&);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 	virtual bool is_DeclareStmt(void);
 	virtual void find_DeclareStmts(std::vector<std::string>&);
@@ -240,11 +240,11 @@ class DeclareStmt : public Statement{
 class AssignStmt : public Statement{
 	private:
 	ExprPtr exp;
-	char *var;
+	std::string var;
 
 	public:
 	void get_variables(std::set<std::string> &vars);
-	AssignStmt(ExprPtr , char *);
+	AssignStmt(ExprPtr , const std::string&);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 };
 
@@ -293,9 +293,9 @@ class FunctionStmt : public Statement{
 	std::shared_ptr<BlockStmt>body;
 
 	public:
-	FunctionStmt(std::string, std::initializer_list<std::string>, 
+	FunctionStmt(const std::string&, std::initializer_list<std::string>, 
 				std::shared_ptr<BlockStmt>);
-	FunctionStmt(std::string, std::vector<std::string>, 
+	FunctionStmt(const std::string&, std::vector<std::string>, 
 				std::shared_ptr<BlockStmt>);
 	void emit(std::map<std::string, int> &, std::vector<Instruction> &);
 };

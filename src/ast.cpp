@@ -75,23 +75,22 @@ void StringExp::emit(std::map<std::string, int> &context,
 
 void StringExp::get_variables(std::set<std::string> &vars){ }
 
-VarExp::VarExp(char *s){
-	this->var = s;
+VarExp::VarExp(const std::string& s){
+	var_name = s;
 }
 
 void VarExp::emit(std::map<std::string, int> &context,
 				  std::vector<Instruction> &is){
-	if(context.count(this->var) != 0){
-		int &stack_pos = context.at(this->var);
+	if(context.count(var_name) != 0){
+		int &stack_pos = context.at(var_name);
 		is.push_back(load_stk(stack_pos));
 	} else{
-		char* s = this->var;
-		is.push_back(load_glb(s));
+		is.push_back(load_glb(var_name.c_str()));
 	}
 }
 
 void VarExp::get_variables(std::set<std::string> &vars){
-	vars.insert(var);
+	vars.insert(var_name);
 }
 
 
@@ -498,9 +497,9 @@ void ReturnStmt::get_variables(std::set<std::string> &vars){
 	exp->get_variables(vars);
 }
 
-DeclareStmt::DeclareStmt(ExprPtr exp, char *var){
+DeclareStmt::DeclareStmt(ExprPtr exp, const std::string& var){
 	this->exp = exp;
-	this->var = var;
+	this->var_name = var;
 }
 
 bool DeclareStmt::is_DeclareStmt(void){
@@ -508,7 +507,7 @@ bool DeclareStmt::is_DeclareStmt(void){
 }
 
 void DeclareStmt::find_DeclareStmts(std::vector<std::string> &context){
-	context.push_back(this->var);
+	context.push_back(var_name);
 }
 
 void DeclareStmt::emit(std::map<std::string, int> &context,
@@ -518,8 +517,8 @@ void DeclareStmt::emit(std::map<std::string, int> &context,
 	 * for the variable to be global
 	 */
 	this->exp->emit(context, is);
-	if(context.count(this->var) != 0){
-		int &stack_pos = context.at(this->var);
+	if(context.count(var_name) != 0){
+		int &stack_pos = context.at(var_name);
 		is.push_back(set_stk(stack_pos));
 	}
 }
@@ -528,7 +527,7 @@ void DeclareStmt::get_variables(std::set<std::string> &vars){
 	exp->get_variables(vars);
 }
 
-AssignStmt::AssignStmt(ExprPtr exp, char *var){
+AssignStmt::AssignStmt(ExprPtr exp, const std::string& var){
 	this->exp = exp;
 	this->var = var;
 }
@@ -540,8 +539,7 @@ void AssignStmt::emit(std::map<std::string, int> &context,
 		int &stack_pos = context.at(this->var);
 		is.push_back(set_stk(stack_pos));
 	} else{
-		char* s = this->var;
-		is.push_back(set_glb(s));
+		is.push_back(set_glb(this->var.c_str()));
 	}
 }
 
@@ -672,7 +670,7 @@ void WhileStmt::get_variables(std::set<std::string> &vars){
 }
 
 FunctionStmt::FunctionStmt(
-				std::string name, 
+				const std::string& name, 
 				std::vector<std::string> args,
 				std::shared_ptr<BlockStmt> body){
 
@@ -684,7 +682,7 @@ FunctionStmt::FunctionStmt(
 }
 
 FunctionStmt::FunctionStmt(
-				std::string name, 
+				const std::string& name, 
 				std::initializer_list<std::string> args,
 				std::shared_ptr<BlockStmt> body){
 

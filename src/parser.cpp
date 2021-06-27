@@ -448,7 +448,7 @@ ExprPtr  parse_var(ParseInfo *p){
 
 	if(working.identifier(&s)){
 		*p = working;
-		return MAKE_EXPR( new VarExp(strdup(s.c_str())) );
+		return MAKE_EXPR( new VarExp(s) );
 	}
 	return nullptr;
 }
@@ -595,7 +595,7 @@ StmtPtr parse_let(ParseInfo *p){
 	   working.match(";")
 	  ){
 	  	*p = working;
-		return MAKE_STMT(new DeclareStmt(exp, strdup(id.c_str())));
+		return MAKE_STMT(new DeclareStmt(exp, id));
 	  }
 
 	  return nullptr;
@@ -651,7 +651,7 @@ StmtPtr parse_assign(ParseInfo *p){
 	   working.match(";")
 	  ){
 	  	*p = working;
-		return MAKE_STMT( new AssignStmt(exp, strdup(id.c_str())) );
+		return MAKE_STMT( new AssignStmt(exp, id) );
 	}
 
 	return nullptr;
@@ -697,7 +697,7 @@ StmtPtr parse_funcdef(ParseInfo *p){
 	   (body = parse_block(&working))
 	  ){
 	  	*p = working;
-		return MAKE_STMT(new FunctionStmt(strdup(id.c_str()), args, body));
+		return MAKE_STMT(new FunctionStmt(id, args, body));
 	}
 
 	return nullptr;
