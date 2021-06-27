@@ -82,15 +82,15 @@ Instruction push_frame(int);
 Instruction ret(void);
 Instruction drop(void);
 
-Instruction label(char *);
+Instruction label(const char *);
 
 Instruction jmp_cnd(int);
 Instruction jmp_lnk(int);
 Instruction jmp(int);
-Instruction jmp_lbl(char *);
+Instruction jmp_lbl(const char *);
 Instruction jmp_closure(void);
 
-Instruction jmp(char *);
+Instruction jmp(const char *);
 
 Instruction new_obj(void);
 Instruction new_vec(void);
@@ -103,13 +103,13 @@ Instruction closure_capture(int);
 Instruction load_imm_f(float);
 Instruction load_imm_i(int);
 Instruction load_stk(int);
-Instruction load_glb(char *);
+Instruction load_glb(const char *);
 
 Instruction set_stk(int);
-Instruction set_glb(char *);
+Instruction set_glb(const char *);
 
-Instruction insert_s(char *);
-Instruction lookup_s(char *);
+Instruction insert_s(const char *);
+Instruction lookup_s(const char *);
 
 Instruction insert_v(void);
 Instruction lookup_v(void);
@@ -126,8 +126,8 @@ Instruction lte(void);
 Instruction gt(void);
 Instruction gte(void);
 
-Instruction ffi_load(char *);
-Instruction ffi_call_sym(char *);
+Instruction ffi_load(const char *);
+Instruction ffi_call_sym(const char *);
 Instruction ffi_call(void *);
 
 void process_labels(std::vector<Instruction> &ins);

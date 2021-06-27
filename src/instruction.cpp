@@ -279,10 +279,10 @@ Instruction jmp_lnk(int i){
 	return out;
 }
 
-Instruction jmp_lbl(char *c){
+Instruction jmp_lbl(const char *c){
 	Instruction out;
 	out.op = JMP_LBL;
-	out.str =c;
+	out.str = strdup(c);
 	return out;
 }
 
@@ -292,10 +292,10 @@ Instruction jmp_closure(void){
 	return out;
 }
 
-Instruction label(char *c){
+Instruction label(const char *c){
 	Instruction out;
 	out.op = LABEL;
-	out.str =c;
+	out.str = strdup(c);
 	return out;
 }
 
@@ -356,10 +356,10 @@ Instruction load_stk(int i){
 	return out;
 }
 
-Instruction load_glb(char *c){
+Instruction load_glb(const char *c){
 	Instruction out;
 	out.op = LOAD_GLB;
-	out.str =c;
+	out.str = strdup(c);
 	return out;
 }
 
@@ -371,38 +371,38 @@ Instruction set_stk(int i){
 	return out;
 }
 
-Instruction set_glb(char *c){
+Instruction set_glb(const char *c){
 	Instruction out;
 	out.op = SET_GLB;
-	out.str =c;
+	out.str = strdup(c);
 	return out;
 }
 
-Instruction insert_s(char *c){
+Instruction insert_s(const char *c){
 	Instruction out;
 	out.op = INSERT_S;
-	out.str =c;
+	out.str = strdup(c);
 	return out;
 }
 
-Instruction lookup_s(char *c){
+Instruction lookup_s(const char *c){
 	Instruction out;
 	out.op = LOOKUP_S;
-	out.str = c;
+	out.str = strdup(c);
 	return out;
 }
 
-Instruction ffi_load(char *c){
+Instruction ffi_load(const char *c){
 	Instruction out;
 	out.op = FFI_LOAD;
-	out.str = c;
+	out.str = strdup(c);
 	return out;
 }
 
-Instruction ffi_call_sym(char *c){
+Instruction ffi_call_sym(const char *c){
 	Instruction out;
 	out.op = FFI_CALL_SYM;
-	out.str = c;
+	out.str = strdup(c);
 	return out;
 }
 
@@ -445,6 +445,7 @@ void process_labels(std::vector<Instruction> &ins){
 		if(instr.op == JMP_LBL){
 			int absolute = lookup_table[instr.str];
 			int relative = absolute - ins_ptr;
+			free(instr.str);
 			ins[ins_ptr].op = JMP_LNK;
 			ins[ins_ptr].i = relative;
 		}

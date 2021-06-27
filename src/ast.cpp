@@ -169,7 +169,7 @@ void CallExp::emit(std::map<std::string, int> &context,
 		a->emit(context, is);
 	}
 	is.push_back( push_frame(arguments.size()) );
-	is.push_back( jmp_lbl( strdup(name.c_str()) ) );
+	is.push_back( jmp_lbl(name.c_str()) );
 }
 
 void CallExp::get_variables(std::set<std::string> &vars){
@@ -243,7 +243,7 @@ void FFICallExp::emit(
 		a->emit(context, is);
 	}
 	is.push_back( push_frame(arguments.size()) );
-	is.push_back( ffi_call_sym(strdup(func_name.c_str())) );
+	is.push_back( ffi_call_sym(func_name.c_str()) );
 }
 
 void FFICallExp::get_variables(std::set<std::string> &vars){
@@ -264,9 +264,9 @@ void FieldAccessor::emit(std::map<std::string, int> &context,
 					   std::vector<Instruction> &is){
 	sub_exp->emit(context, is);
 	if(is_setter){
-		is.push_back( insert_s( strdup(field.c_str())) );
+		is.push_back( insert_s(field.c_str()) );
 	} else{
-		is.push_back( lookup_s( strdup(field.c_str())) );
+		is.push_back( lookup_s(field.c_str()) );
 	}
 }
 
@@ -315,7 +315,6 @@ GetFieldExp::GetFieldExp(AccessPtr acc, ExprPtr exp){
 void GetFieldExp::emit(std::map<std::string, int> &context,
 					   std::vector<Instruction> &is){
 	expression->emit(context, is);
-	//is.push_back( lookup_s( strdup(field.c_str())) );
 	accessor->emit(context, is);
 }
 
@@ -719,7 +718,7 @@ void FunctionStmt::emit(std::map<std::string, int> &context,
 	}
 	
 	auto function_is = std::vector<Instruction>();
-	function_is.push_back( label(strdup(name.c_str())) ); // push label
+	function_is.push_back( label(name.c_str()) ); // push label
 	//push space on stack for local variables
 	for(auto _ : locals){
 		function_is.push_back( new_obj() ); // push label
@@ -758,5 +757,5 @@ LoadFFIStmt::LoadFFIStmt(std::string name){
 
 void LoadFFIStmt::emit(std::map<std::string, int> &context,
 						std::vector<Instruction> &is){
-	is.push_back( ffi_load(strdup(ffi_name.c_str())) );
+	is.push_back( ffi_load(ffi_name.c_str()) );
 }
