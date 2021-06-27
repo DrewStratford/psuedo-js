@@ -153,7 +153,8 @@ void Closure::mark(void){
 	if(active) return;
 	active = true;
 	for(auto o : env){
-		o.show();
+		if(Object* obj = o.as_o())
+			obj->mark();
 	}
 }
 
@@ -174,6 +175,23 @@ void Closure::print_env(void){
 
 void Closure::push_var(ObjPtr o){
 	env.push_back(o);
+}
+
+// StringObject implementations
+StringObject::StringObject(std::string&& str){
+	this->str = str;
+}
+
+void StringObject::mark(void){
+	active = true;
+}
+
+void StringObject::show(void){
+	puts(this->str.c_str());
+}
+
+StringObject* StringObject::add(StringObject* object){
+	return new StringObject(this->str + object->str);
 }
 
 /*
@@ -228,6 +246,11 @@ ObjPtr::object_ptr(ArrayList *c){
 	this->data = (int64_t)c >> 4;
 }
 
+ObjPtr::object_ptr(StringObject *c){
+	this->type = STRING;
+	this->data = (int64_t)c >> 4;
+}
+
 int32_t ObjPtr::as_i(void){
 	if(this->type == INT) return (int32_t)this->data;
 	return 0;
@@ -245,16 +268,20 @@ Object *ObjPtr::as_o(void){
 	return nullptr;
 }
 
-Closure *ObjPtr::as_c(void){
+Closure* ObjPtr::as_c(void){
 	if(this->type == CLOSURE) return (Closure*)(data << 4);
 	return nullptr;
 }
-ArrayList *ObjPtr::as_arr(void){
+ArrayList* ObjPtr::as_arr(void){
 	if(this->type == ARRAY) return (ArrayList*)(data << 4);
 	return nullptr;
 }
-Dictionary *ObjPtr::as_dict(void){
+Dictionary* ObjPtr::as_dict(void){
 	if(this->type == DICT) return (Dictionary*)(data << 4);
+	return nullptr;
+}
+StringObject* ObjPtr::as_string(void){
+	if(this->type == STRING) return (StringObject*)(data << 4);
 	return nullptr;
 }
 
@@ -274,6 +301,9 @@ ObjPtr add(ObjPtr a, ObjPtr b){
 	if(arr = b.as_arr()){
 		arr->insert(arr->begin(), a);
 		return b;
+	}
+	if(a.type == STRING && b.type == STRING){
+		return ObjPtr(a.as_string()->add(b.as_string()));
 	}
 	return  ObjPtr();
 }

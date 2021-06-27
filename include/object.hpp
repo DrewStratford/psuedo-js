@@ -15,7 +15,7 @@ typedef struct object_ptr ObjPtr;
 
 // we have 4 bits to store this in so we can have
 // 8 fundamental types.
-enum PointerType {INT, FLOAT, CLOSURE, ARRAY, DICT} ;
+enum PointerType {INT, FLOAT, CLOSURE, ARRAY, DICT, STRING} ;
 
 /*
  * Base class for all heap allocated data structures.
@@ -92,6 +92,16 @@ class Dictionary_ : public Object, public std::map<k, v>{
 };
 typedef Dictionary_<std::string, ObjPtr> Dictionary;
 
+class StringObject : public Object {
+	private:
+	std::string str;
+	public:
+	StringObject(std::string&&);
+	void mark(void);
+	void show(void);
+	StringObject* add(StringObject* object);
+};
+
 /*
  * A 64 bit wide struct that is either
  * a pointer to an Object or a primitive
@@ -104,16 +114,18 @@ struct object_ptr{
 	object_ptr(void); 
 	object_ptr(int32_t i);
 	object_ptr(float f);
-	object_ptr(Closure *);
-	object_ptr(Dictionary *);
-	object_ptr(ArrayList *);
+	object_ptr(Closure*);
+	object_ptr(Dictionary*);
+	object_ptr(ArrayList*);
+	object_ptr(StringObject*);
 
 	int32_t as_i(void);
 	float as_f(void);
-	Object *as_o(void);
-	Closure *as_c(void);
-	Dictionary *as_dict(void);
-	ArrayList *as_arr(void);
+	Object* as_o(void);
+	Closure* as_c(void);
+	Dictionary* as_dict(void);
+	ArrayList* as_arr(void);
+	StringObject* as_string(void);
 
 	void show(void);
 
