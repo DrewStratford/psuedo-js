@@ -463,3 +463,16 @@ void process_labels(std::vector<Instruction> &ins){
 		}
 	}
 }
+
+std::ostream& operator<<(std::ostream& os, const Instruction& i){
+	os << instruction_names[i.op];
+	switch(instruction_types[i.op]){
+		case Int: os << ": " << i.i; break;
+		case Float: os << ": " << i.f; break;
+		case String: os << ": " << i.str; break;
+		case Ptr: os << ": " << i.ptr; break;
+		default: break;
+	}
+
+	return os;
+}

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include "context.hpp"
 
@@ -74,6 +75,7 @@ typedef struct Instruction{
 		int i;
 		float f;
 	};
+	friend std::ostream& operator<<(std::ostream& os, const Instruction&);
 } Instruction;
 
 void step_instruction(Context *, Instruction, int*, Dictionary *);
@@ -132,5 +134,33 @@ Instruction ffi_call(void *);
 
 void process_labels(std::vector<Instruction> &ins);
 
-
+enum ParamType { None, Int, Float, String, Index, Ptr };
+const std::string instruction_names[]{
+	"SHOW_FRAME", "PUSH_FRAME", "RET", "DROP",
+	"LABEL",
+	"JMP_CND", "JMP_LNK", "JMP_LBL", "JMP", "JMP_CLOS",
+	"NEW_OBJ", "NEW_VEC", "NEW_CLOS", "NEW_UNIT", "NEW_STRING",
+	"CLOS_CAP",
+	"LOAD_IMM_F", "LOAD_IMM_I", "LOAD_STK", "SET_STK",
+	"LOAD_GLB", "SET_GLB",
+	"LOOKUP_S", "INSERT_S",
+	"LOOKUP_V", "INSERT_V",
+	"ADD", "MIN", "MUL", "DIV", "MOD",
+	"EQ", "LT", "LTE", "GT", "GTE",
+	"FFI_LOAD", "FFI_CALL_SYM", "FFI_CALL"
+};
+const ParamType instruction_types[]{
+	None, None, None, None,
+	String,
+	Int, Int, String, Int, None,
+	None, None, None, None, String,
+	Int,
+	Float, Int, Int, Int,
+	String, String,
+	String, String,
+	None, None,
+	None, None, None, None, None,
+	None, None, None, None, None,
+	String, String, Ptr
+};
 #endif
