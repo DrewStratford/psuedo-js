@@ -94,7 +94,7 @@ void Context::show_frame(void){
 	std::vector<ObjPtr> &callframe = this->stack.front();
 	std::cout << "{\n";
 	for(auto o : callframe){
-		o.show();
+		o.show(std::cout);
 	}
 	std::cout << "}\n";
 }

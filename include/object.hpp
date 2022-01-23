@@ -43,7 +43,9 @@ class Object{
 	Object(); 
 
 	virtual void mark(void);
-	virtual void show(void);
+	virtual std::ostream& show(std::ostream&) const;
+
+	friend std::ostream& operator<<(std::ostream&, const Object&);
 
 	//these should probably be private
 	static void gc_delete(void);
@@ -60,10 +62,10 @@ class Closure : public Object{
 	Closure(int f_ptr);
 	int get_func(void);
 	void push_var(ObjPtr);
-	void print_env(void);
+	std::ostream& print_env(std::ostream&) const;
 
 	void mark(void);
-	void show(void);
+	std::ostream& show(std::ostream&) const;
 };
 
 /*
@@ -78,7 +80,7 @@ class ArrayList_ : public Object, public std::vector<a>{
 	public:
 
 	void mark(void);
-	void show(void);
+	std::ostream& show(std::ostream&) const;
 };
 typedef ArrayList_<ObjPtr> ArrayList;
 
@@ -88,7 +90,7 @@ class Dictionary_ : public Object, public std::map<k, v>{
 	public:
 
 	void mark(void);
-	void show(void);
+	std::ostream& show(std::ostream&) const;
 };
 typedef Dictionary_<std::string, ObjPtr> Dictionary;
 
@@ -98,7 +100,7 @@ class StringObject : public Object {
 	public:
 	StringObject(std::string&&);
 	void mark(void);
-	void show(void);
+	std::ostream& show(std::ostream&) const;
 	StringObject* add(StringObject* object);
 };
 
@@ -127,7 +129,7 @@ struct object_ptr{
 	ArrayList* as_arr(void);
 	StringObject* as_string(void);
 
-	void show(void);
+	std::ostream& show(std::ostream&);
 
 } __attribute__((packed));
 

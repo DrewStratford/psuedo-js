@@ -9,8 +9,8 @@ Object::Object(){
 }
 
 
-void Object::show(void){
-	return;
+std::ostream& Object::show(std::ostream& os) const{
+	return os;
 }
 void Object::mark(void){
 	this->active = true;
@@ -100,30 +100,34 @@ void ArrayList::mark(void){
 	}
 }
 
-template<>
-void ArrayList::show(void){
-	printf("[");
-	for(auto pos = begin(); pos < end(); pos++){
-		ObjPtr o = *pos;
-		o.show();
-		if(pos + 1 != end())
-			printf(", ");
-
-	}
-	printf("]");
+std::ostream& operator<<(std::ostream& os, const Object& obj){
+	return obj.show(os);
 }
 
 template<>
-void Dictionary::show(void){
-	Dictionary *hack = this;
-	printf("{");
+std::ostream& ArrayList::show(std::ostream& os) const{
+	os << "[";
+	for(auto pos = begin(); pos < end(); pos++){
+		ObjPtr o = *pos;
+		o.show(os);
+		if(pos + 1 != end())
+			os << ", ";
+
+	}
+	return os << "]";
+}
+
+template<>
+std::ostream& Dictionary::show(std::ostream& os) const{
+	const Dictionary *hack = this;
+	os << "{";
 	for(auto pos = begin(); pos != hack->end(); pos++){
 		auto pair = *pos;
-		printf("%s : ", pair.first.c_str());
-		pair.second.show();
-		printf(", ");
+		os << pair.first.c_str() << ": ";
+		pair.second.show(os);
+		os << (", ");
 	}
-	printf("}");
+	return os << ("}");
 }
 
 template<>
@@ -158,7 +162,7 @@ void Closure::mark(void){
 	}
 }
 
-void Closure::show(void){
+std::ostream& Closure::show(std::ostream&) const{
 	std::cout << "CLOSURE " << func_ptr;
 }
 
@@ -166,11 +170,12 @@ int Closure::get_func(void){
 	return func_ptr;
 }
 
-void Closure::print_env(void){
+std::ostream& Closure::print_env(std::ostream& os) const{
 	for(auto o : env){
-		printf("\tcap: ");
-		o.show();
+		os << "\tcap: ";
+		o.show(os);
 	}
+	return os;
 }
 
 void Closure::push_var(ObjPtr o){
@@ -186,8 +191,8 @@ void StringObject::mark(void){
 	active = true;
 }
 
-void StringObject::show(void){
-	printf("\"%s\"", this->str.c_str());
+std::ostream& StringObject::show(std::ostream& os) const{
+	return os << this->str;
 }
 
 StringObject* StringObject::add(StringObject* object){
@@ -198,19 +203,19 @@ StringObject* StringObject::add(StringObject* object){
  * ObjPtr constructors
  */
 
-void ObjPtr::show(void){
+std::ostream& ObjPtr::show(std::ostream& os) {
 	switch(type){
 		case INT:
-			printf("%d", as_i());
+			os << as_i();
 			break;
 		case FLOAT:
-			printf("%f", as_f());
+			os << as_f();
 			break;
 		default:
 		{
 			Object *o= nullptr;
 			if(o = as_o()){
-				o->show();
+				o->show(os);
 			}
 		}
 	}
@@ -369,29 +374,3 @@ ObjPtr gte(ObjPtr a, ObjPtr b){
 		return ObjPtr(a.as_f() >= b.as_f());
 	return ObjPtr();
 }
-
-
-/*
-#include <cstdio>
-int main(){
-	printf("hello\n");
-	ObjPtr a = ObjPtr(10);
-	ObjPtr b = ObjPtr(22);
-	ObjPtr c = add(a, b);
-	printf("%d\n", a.as_i());
-	printf("%d\n", b.as_i());
-	printf("10 + 22 = %d\n", c.as_i());
-	ObjPtr clos = ObjPtr(new Closure(0));
-	clos.as_o()->show();
-	ArrayList* arr = new ArrayList();
-	Dictionary* dict = new Dictionary();
-	dict->emplace("foo", c);
-	arr->push_back(a);
-	arr->push_back(clos);
-	arr->push_back(b);
-	arr->mark();
-	arr->show();
-	dict->show();
-	return 0;
-}
-*/

@@ -813,6 +813,10 @@ int main(int argc, char **argv){
 	auto c = std::map<std::string, int>();
 	stmt->emit(c, is);
 
+	for(auto i : is){
+		std::cout << i << "\n";
+	}
+
 	auto globals = new Dictionary();
 	create_closures(is, globals);
 	process_labels(is);
@@ -822,7 +826,7 @@ int main(int argc, char **argv){
 		step_instruction(&ctx, i, &ip, globals);
 	}
 
-	globals->show();
+	std::cout << *globals;
 	ctx.garbage_collect();
 	return 0;
 }
