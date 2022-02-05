@@ -286,6 +286,13 @@ Instruction jmp_lbl(const char *c){
 	return out;
 }
 
+Instruction jmp_lbl(std::string str){
+	Instruction out;
+	out.op = JMP_LBL;
+	out.str = strdup(str.c_str());
+	return out;
+}
+
 Instruction jmp_closure(void){
 	Instruction out;
 	out.op = JMP_CLOS;
@@ -296,6 +303,13 @@ Instruction label(const char *c){
 	Instruction out;
 	out.op = LABEL;
 	out.str = strdup(c);
+	return out;
+}
+
+Instruction label(std::string str){
+	Instruction out;
+	out.op = LABEL;
+	out.str = strdup(str.c_str());
 	return out;
 }
 
@@ -439,14 +453,14 @@ void process_labels(std::vector<Instruction> &ins){
 		}
 	}
 
-	// changes jmp_lbl to the appropriate jmp_lnk rel
+	// changes jmp_lbl to the appropriate jmp
 	for(int ins_ptr = 0; ins_ptr < ins.size(); ins_ptr++){
 		Instruction instr = ins[ins_ptr];
 		if(instr.op == JMP_LBL){
 			int absolute = lookup_table[instr.str];
 			int relative = absolute - ins_ptr;
 			free(instr.str);
-			ins[ins_ptr].op = JMP_LNK;
+			ins[ins_ptr].op = JMP;
 			ins[ins_ptr].i = relative;
 		}
 	}

@@ -85,14 +85,17 @@ Instruction ret(void);
 Instruction drop(void);
 
 Instruction label(const char *);
+Instruction label(std::string);
 
 Instruction jmp_cnd(int);
 Instruction jmp_lnk(int);
 Instruction jmp(int);
 Instruction jmp_lbl(const char *);
+Instruction jmp_lbl(std::string);
 Instruction jmp_closure(void);
 
 Instruction jmp(const char *);
+Instruction jmp(std::string);
 
 Instruction new_obj(void);
 Instruction new_vec(void);

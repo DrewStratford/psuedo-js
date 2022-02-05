@@ -782,7 +782,8 @@ void create_closures(std::vector<Instruction> &ins, Dictionary *globals){
 	// scan for label addresses
 	for(int ins_ptr = 0; ins_ptr < ins.size(); ins_ptr++){
 		Instruction instr = ins[ins_ptr];
-		if(instr.op == LABEL){
+		// HACKY, but we check for . so we don't include loop labels etc.
+		if(instr.op == LABEL && instr.str[0] != '.'){
 			globals->emplace(instr.str, ObjPtr(new Closure(ins_ptr)));
 		}
 	}
@@ -814,13 +815,22 @@ int main(int argc, char **argv){
 	auto c = std::map<std::string, int>();
 	stmt->emit(state, c, is);
 
+	int position = 0;
 	for(auto i : is){
-		std::cout << i << "\n";
+		std::cout << position << ":\t" << i << "\n";
+		position++;
 	}
 
 	auto globals = new Dictionary();
 	create_closures(is, globals);
 	process_labels(is);
+
+	std::cout << "===================================================\n";
+	position = 0;
+	for(auto i : is){
+		std::cout << position << ":\t" << i << "\n";
+		position++;
+	}
 
 	for(int ip = 0; ip >= 0 && ip < is.size(); ){
 		auto i = is[ip];

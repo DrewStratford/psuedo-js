@@ -563,24 +563,18 @@ void IfStmt::find_DeclareStmts(std::vector<std::string> &context){
 
 void IfStmt::emit(CompilationState& state, ScopeInfo &context,
 				  std::vector<Instruction> &is){
-	 // We need to know the size of the body so
-	 // that we can jmp over it.
-	auto if_is = std::vector<Instruction>();
-	auto else_is = std::vector<Instruction>();
-	this->_if->emit(state, context, if_is);
-	this->_else->emit(state, context, else_is);
-
-	int if_size = if_is.size();
-	if(if_size == 0) if_size = 1;
-
-	int else_size = else_is.size();
+	auto if_i = std::to_string(state.new_if());
 
 	this->exp->emit(state, context, is);
 	is.push_back( jmp_cnd(2) ); // jump into _if
-	is.push_back( jmp(if_size+2) ); // jump past the _if into _else
-	is.insert(is.end(), if_is.begin(), if_is.end());
-	is.push_back( jmp(else_size+1) ); //jump past else 
-	is.insert(is.end(), else_is.begin(), else_is.end());
+	is.push_back( jmp_lbl(".if.else."+if_i) ); // jump past the _if into _else
+
+	this->_if->emit(state, context, is);
+	is.push_back( jmp_lbl(".if.end."+if_i) ); //jump past else
+
+	is.push_back( label(".if.else."+if_i) );
+	this->_else->emit(state, context, is);
+	is.push_back( label(".if.end."+if_i) );
 }
 
 void IfStmt::get_variables(std::set<std::string> &vars){
@@ -599,23 +593,16 @@ void WhileStmt::find_DeclareStmts(std::vector<std::string> &context){
 	this->body->find_DeclareStmts(context);
 }
 
-void WhileStmt::emit(CompilationState& state, ScopeInfo &context,
-					 std::vector<Instruction> &is){
-	auto cnd_is = std::vector<Instruction>();
-	auto body_is = std::vector<Instruction>();
+void WhileStmt::emit(CompilationState& state, ScopeInfo &context, std::vector<Instruction> &is){
+	auto while_i = std::to_string(state.new_if());
 
-	exp->emit(state, context, cnd_is);
-	body->emit(state, context, body_is);
-
-	is.insert(is.end(), cnd_is.begin(), cnd_is.end());
-
+	is.push_back( label(".while.start."+while_i) );
+	exp->emit(state, context, is);
 	is.push_back( jmp_cnd(2) );
-	is.push_back( jmp(body_is.size() + 2) );
-
-	is.insert(is.end(), body_is.begin(), body_is.end());
-
-	int total_size = 2 + cnd_is.size() + body_is.size();
-	is.push_back( jmp(-total_size) );
+	is.push_back( jmp_lbl(".while.end."+while_i) );
+	body->emit(state, context, is);
+	is.push_back( jmp_lbl(".while.start."+while_i) );
+	is.push_back( label(".while.end."+while_i) );
 
 }
 
@@ -648,14 +635,9 @@ FunctionStmt::FunctionStmt(
 	this->body = body;
 }
 
-void FunctionStmt::emit(CompilationState& state, ScopeInfo &context,
-						std::vector<Instruction> &is){
-	
-	/*
-	 * First we need to make a new context containing the
-	 * args and local variables stack locations.
-	 */
-
+void FunctionStmt::emit(CompilationState& state, ScopeInfo& context, std::vector<Instruction>& is){
+	// First we need to make a new context containing the
+	// args and local variables stack locations.
 	auto func_context = ScopeInfo();
 	int stack_pos = 0;
 	for(auto arg : arguments){
@@ -670,20 +652,15 @@ void FunctionStmt::emit(CompilationState& state, ScopeInfo &context,
 		stack_pos++;
 	}
 	
-	auto function_is = std::vector<Instruction>();
-	function_is.push_back( label(name.c_str()) ); // push label
+	is.push_back( jmp_lbl("."+name+".end") ); // jump over function body
+	is.push_back( label(name) ); // push label
+
 	//push space on stack for local variables
-	for(auto _ : locals){
-		function_is.push_back( new_obj() ); // push label
-	}
+	for(auto _ : locals)
+		is.push_back( new_obj() ); // push label
 
-	body->emit(state, func_context, function_is);
-
-	is.push_back( jmp( function_is.size()+1 ) ); // jump over function body
-
-	for( auto instr : function_is){
-		is.push_back(instr);
-	}
+	body->emit(state, func_context, is);
+	is.push_back( label("."+name+".end") );
 }
 
 SetFieldStmt::SetFieldStmt(AccessPtr obj,
