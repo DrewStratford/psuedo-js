@@ -7,7 +7,7 @@ void Expression::get_variables(std::set<std::string> &vars){
 
 UnitExp::UnitExp(void){}
 
-void UnitExp::emit(std::map<std::string, int> &context,
+void UnitExp::emit(CompilationState& state, ScopeInfo &context,
 				  std::vector<Instruction> &is){
 	is.push_back( new_unit() );
 }
@@ -17,7 +17,7 @@ IntExp::IntExp(int i){
 	this->i = i;
 }
 
-void IntExp::emit(std::map<std::string, int> &context,
+void IntExp::emit(CompilationState& state, ScopeInfo &context,
 				  std::vector<Instruction> &is){
 	is.push_back(load_imm_i(this->i));
 }
@@ -26,7 +26,7 @@ FloatExp::FloatExp(float f){
 	this->f = f;
 }
 
-void FloatExp::emit(std::map<std::string, int> &context, 
+void FloatExp::emit(CompilationState& state, ScopeInfo &context, 
 					std::vector<Instruction> &is){
 	is.push_back(load_imm_f(this->f));
 }
@@ -34,7 +34,7 @@ void FloatExp::emit(std::map<std::string, int> &context,
 ObjectExp::ObjectExp(){
 }
 
-void ObjectExp::emit(std::map<std::string, int> &context,
+void ObjectExp::emit(CompilationState& state, ScopeInfo &context,
 					 std::vector<Instruction> &is){
 	is.push_back( new_obj() );
 }
@@ -47,13 +47,13 @@ VectorExp::VectorExp(std::vector<ExprPtr > &es){
 	}
 }
 
-void VectorExp::emit(std::map<std::string, int> &context,
+void VectorExp::emit(CompilationState& state, ScopeInfo &context,
 					 std::vector<Instruction> &is){
 	is.push_back( new_vec() );
 	//we push the elems then add them to the newly
 	// created vector
 	for(auto exp : elems){
-		exp->emit(context, is);
+		exp->emit(state, context, is);
 		is.push_back( add() );
 	}
 }
@@ -68,7 +68,7 @@ StringExp::StringExp(std::vector<char>& cs){
 	str = std::string(cs.begin(), cs.end());
 }
 
-void StringExp::emit(std::map<std::string, int> &context,
+void StringExp::emit(CompilationState& state, ScopeInfo &context,
 					 std::vector<Instruction> &is){
 	is.push_back( new_string(str.c_str()) );
 }
@@ -79,7 +79,7 @@ VarExp::VarExp(const std::string& s){
 	var_name = s;
 }
 
-void VarExp::emit(std::map<std::string, int> &context,
+void VarExp::emit(CompilationState& state, ScopeInfo &context,
 				  std::vector<Instruction> &is){
 	if(context.count(var_name) != 0){
 		int &stack_pos = context.at(var_name);
@@ -100,11 +100,11 @@ BinExp::BinExp(enum BinOp op, ExprPtr l, ExprPtr r){
 	this->right = r;
 }
 
-void BinExp::emit(std::map<std::string, int> &context,
+void BinExp::emit(CompilationState& state, ScopeInfo &context,
 				  std::vector<Instruction> &is){
 
-	left->emit(context, is);
-	right->emit(context, is);
+	left->emit(state, context, is);
+	right->emit(state, context, is);
 
 	Instruction operation = add();
 	switch(this->op){
@@ -161,11 +161,11 @@ CallExp::CallExp(std::string name, std::vector<ExprPtr > args){
 	}
 }
 
-void CallExp::emit(std::map<std::string, int> &context,
+void CallExp::emit(CompilationState& state, ScopeInfo &context,
 				   std::vector<Instruction> &is){
 	
 	for(auto a : arguments){
-		a->emit(context, is);
+		a->emit(state, context, is);
 	}
 	is.push_back( push_frame(arguments.size()) );
 	is.push_back( jmp_lbl(name.c_str()) );
@@ -198,15 +198,15 @@ ClosureCallExp::ClosureCallExp(
 	this->closure = exp;
 }
 
-void ClosureCallExp::emit(
-			std::map<std::string, int> &context,
+void ClosureCallExp::emit(CompilationState& state, 
+			ScopeInfo &context,
 			std::vector<Instruction> &is
 			){
 	
 	for(auto a : arguments){
-		a->emit(context, is);
+		a->emit(state, context, is);
 	}
-	closure->emit(context, is);
+	closure->emit(state, context, is);
 	is.push_back( push_frame(arguments.size()+1) );
 	is.push_back( jmp_closure() );
 }
@@ -233,13 +233,13 @@ FFICallExp::FFICallExp(
 	}
 }
 
-void FFICallExp::emit(
-			std::map<std::string, int> &context,
+void FFICallExp::emit(CompilationState& state, 
+			ScopeInfo &context,
 			std::vector<Instruction> &is
 			){
 	
 	for(auto a : arguments){
-		a->emit(context, is);
+		a->emit(state, context, is);
 	}
 	is.push_back( push_frame(arguments.size()) );
 	is.push_back( ffi_call_sym(func_name.c_str()) );
@@ -259,9 +259,9 @@ void AccessorExp::set_setter(bool flag){
 FieldAccessor::FieldAccessor(std::string f){
 	field = f;
 }
-void FieldAccessor::emit(std::map<std::string, int> &context,
+void FieldAccessor::emit(CompilationState& state, ScopeInfo &context,
 					   std::vector<Instruction> &is){
-	sub_exp->emit(context, is);
+	sub_exp->emit(state, context, is);
 	if(is_setter){
 		is.push_back( insert_s(field.c_str()) );
 	} else{
@@ -281,10 +281,10 @@ ArrayAccessor::ArrayAccessor(ExprPtr exp){
 	this->exp = exp;
 }
 
-void ArrayAccessor::emit(std::map<std::string, int> &context,
+void ArrayAccessor::emit(CompilationState& state, ScopeInfo &context,
 					   std::vector<Instruction> &is){
-	sub_exp->emit(context, is);
-	exp->emit(context, is);
+	sub_exp->emit(state, context, is);
+	exp->emit(state, context, is);
 	if(is_setter){
 		is.push_back( insert_v() );
 	} else{
@@ -311,10 +311,10 @@ GetFieldExp::GetFieldExp(AccessPtr acc, ExprPtr exp){
 	this->expression = exp;
 }
 
-void GetFieldExp::emit(std::map<std::string, int> &context,
+void GetFieldExp::emit(CompilationState& state, ScopeInfo &context,
 					   std::vector<Instruction> &is){
-	expression->emit(context, is);
-	accessor->emit(context, is);
+	expression->emit(state, context, is);
+	accessor->emit(state, context, is);
 }
 
 void GetFieldExp::get_variables(std::set<std::string> &vars){
@@ -347,7 +347,7 @@ void ClosureExp::get_variables(std::set<std::string> &vars){
 	body->get_variables(vars);
 }
 
-void ClosureExp::emit(std::map<std::string, int> &context,
+void ClosureExp::emit(CompilationState& state, ScopeInfo &context,
 						std::vector<Instruction> &is){
 	std::set<std::string> used;
 	get_variables(used);
@@ -389,7 +389,7 @@ void ClosureExp::emit(std::map<std::string, int> &context,
 	 *
 	 * Captured variables are added last.
 	 */
-	auto func_context = std::map<std::string, int>();
+	auto func_context = ScopeInfo();
 	int stack_pos = 0;
 	for(auto arg : arguments){
 		func_context[arg] = stack_pos;
@@ -419,7 +419,7 @@ void ClosureExp::emit(std::map<std::string, int> &context,
 		function_is.push_back( new_obj() ); // push label
 	}
 
-	body->emit(func_context, function_is);
+	body->emit(state, func_context, function_is);
 
 	is.push_back( jmp( function_is.size()+1 ) ); // jump over function body
 
@@ -439,9 +439,9 @@ ExpressionStmt::ExpressionStmt(ExprPtr exp){
 	this->exp = exp;
 }
 
-void ExpressionStmt::emit(std::map<std::string, int> &context,
+void ExpressionStmt::emit(CompilationState& state, ScopeInfo &context,
 					  std::vector<Instruction> &is){
-	this->exp->emit(context, is);
+	this->exp->emit(state, context, is);
 	is.push_back( drop() );
 }
 
@@ -453,9 +453,9 @@ ReturnStmt::ReturnStmt(ExprPtr exp){
 	this->exp = exp;
 }
 
-void ReturnStmt::emit(std::map<std::string, int> &context,
+void ReturnStmt::emit(CompilationState& state, ScopeInfo &context,
 					  std::vector<Instruction> &is){
-	this->exp->emit(context, is);
+	this->exp->emit(state, context, is);
 	is.push_back( ret() );
 }
 
@@ -476,13 +476,13 @@ void DeclareStmt::find_DeclareStmts(std::vector<std::string> &context){
 	context.push_back(var_name);
 }
 
-void DeclareStmt::emit(std::map<std::string, int> &context,
+void DeclareStmt::emit(CompilationState& state, ScopeInfo &context,
 					   std::vector<Instruction> &is){
 	/*
 	 * When emitting, this just turns into a AssignStmt without the opportunity
 	 * for the variable to be global
 	 */
-	this->exp->emit(context, is);
+	this->exp->emit(state, context, is);
 	if(context.count(var_name) != 0){
 		int &stack_pos = context.at(var_name);
 		is.push_back(set_stk(stack_pos));
@@ -498,9 +498,9 @@ AssignStmt::AssignStmt(ExprPtr exp, const std::string& var){
 	this->var = var;
 }
 
-void AssignStmt::emit(std::map<std::string, int> &context,
+void AssignStmt::emit(CompilationState& state, ScopeInfo &context,
 					  std::vector<Instruction> &is){
-	this->exp->emit(context, is);
+	this->exp->emit(state, context, is);
 	if(context.count(this->var) != 0){
 		int &stack_pos = context.at(this->var);
 		is.push_back(set_stk(stack_pos));
@@ -531,10 +531,10 @@ void BlockStmt::find_DeclareStmts(std::vector<std::string> &context){
 	}
 }
 
-void BlockStmt::emit(std::map<std::string, int> &context,
+void BlockStmt::emit(CompilationState& state, ScopeInfo &context,
 					 std::vector<Instruction> &is){
 	for(auto stmt : this->statements){
-		stmt->emit(context, is);
+		stmt->emit(state, context, is);
 	}
 }
 
@@ -561,21 +561,21 @@ void IfStmt::find_DeclareStmts(std::vector<std::string> &context){
 	this->_else->find_DeclareStmts(context);
 }
 
-void IfStmt::emit(std::map<std::string, int> &context,
+void IfStmt::emit(CompilationState& state, ScopeInfo &context,
 				  std::vector<Instruction> &is){
 	 // We need to know the size of the body so
 	 // that we can jmp over it.
 	auto if_is = std::vector<Instruction>();
 	auto else_is = std::vector<Instruction>();
-	this->_if->emit(context, if_is);
-	this->_else->emit(context, else_is);
+	this->_if->emit(state, context, if_is);
+	this->_else->emit(state, context, else_is);
 
 	int if_size = if_is.size();
 	if(if_size == 0) if_size = 1;
 
 	int else_size = else_is.size();
 
-	this->exp->emit(context, is);
+	this->exp->emit(state, context, is);
 	is.push_back( jmp_cnd(2) ); // jump into _if
 	is.push_back( jmp(if_size+2) ); // jump past the _if into _else
 	is.insert(is.begin(), if_is.begin(), if_is.end());
@@ -599,13 +599,13 @@ void WhileStmt::find_DeclareStmts(std::vector<std::string> &context){
 	this->body->find_DeclareStmts(context);
 }
 
-void WhileStmt::emit(std::map<std::string, int> &context,
+void WhileStmt::emit(CompilationState& state, ScopeInfo &context,
 					 std::vector<Instruction> &is){
 	auto cnd_is = std::vector<Instruction>();
 	auto body_is = std::vector<Instruction>();
 
-	exp->emit(context, cnd_is);
-	body->emit(context, body_is);
+	exp->emit(state, context, cnd_is);
+	body->emit(state, context, body_is);
 
 	is.insert(is.begin(), cnd_is.begin(), cnd_is.end());
 
@@ -648,7 +648,7 @@ FunctionStmt::FunctionStmt(
 	this->body = body;
 }
 
-void FunctionStmt::emit(std::map<std::string, int> &context,
+void FunctionStmt::emit(CompilationState& state, ScopeInfo &context,
 						std::vector<Instruction> &is){
 	
 	/*
@@ -656,7 +656,7 @@ void FunctionStmt::emit(std::map<std::string, int> &context,
 	 * args and local variables stack locations.
 	 */
 
-	auto func_context = std::map<std::string, int>();
+	auto func_context = ScopeInfo();
 	int stack_pos = 0;
 	for(auto arg : arguments){
 		func_context[arg] = stack_pos;
@@ -677,7 +677,7 @@ void FunctionStmt::emit(std::map<std::string, int> &context,
 		function_is.push_back( new_obj() ); // push label
 	}
 
-	body->emit(func_context, function_is);
+	body->emit(state, func_context, function_is);
 
 	is.push_back( jmp( function_is.size()+1 ) ); // jump over function body
 
@@ -693,10 +693,10 @@ SetFieldStmt::SetFieldStmt(AccessPtr obj,
 	this->expression = exp;
 }
 
-void SetFieldStmt::emit(std::map<std::string, int> &context,
+void SetFieldStmt::emit(CompilationState& state, ScopeInfo &context,
 						std::vector<Instruction> &is){
-	expression->emit(context, is);
-	object->emit(context, is);
+	expression->emit(state, context, is);
+	object->emit(state, context, is);
 }
 
 void SetFieldStmt::get_variables(std::set<std::string> &vars){
@@ -708,7 +708,7 @@ LoadFFIStmt::LoadFFIStmt(std::string name){
 	this->ffi_name = name;
 }
 
-void LoadFFIStmt::emit(std::map<std::string, int> &context,
+void LoadFFIStmt::emit(CompilationState& state, ScopeInfo &context,
 						std::vector<Instruction> &is){
 	is.push_back( ffi_load(ffi_name.c_str()) );
 }

@@ -808,10 +808,11 @@ int main(int argc, char **argv){
 	} 
 
 	Context ctx = Context();
+	CompilationState state;
 
 	std::vector<Instruction> is= std::vector<Instruction>();
 	auto c = std::map<std::string, int>();
-	stmt->emit(c, is);
+	stmt->emit(state, c, is);
 
 	for(auto i : is){
 		std::cout << i << "\n";
