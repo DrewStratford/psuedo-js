@@ -349,29 +349,6 @@ void ClosureExp::get_variables(std::set<std::string> &vars){
 
 void ClosureExp::emit(std::map<std::string, int> &context,
 						std::vector<Instruction> &is){
-	
-
-	/*
-	 * TODO: Because we use a temporary list of instructions
-	 * here, nested closure may have the wrong absolute address.
-	 *
-	 * Consider: why am I even using absolute addressing in the first
-	 * place? Answer: closures may be called from a variety of places.
-	 *
-	 * The only suitable solutions is to pass the offset to emit
-	 * (annoying to implement).
-	 * Or to add a new Closure label instruction which is changed
-	 * to absolute address during processing.
-	 */
-	/*
-	 * Captured variables are variables that are used,
-	 * but not defined in either the closure's scope or 
-	 * global scope. So a variable is captured when it
-	 * is used and also present in the outside context (&context).
-	 *
-	 * Solution store count of captured vars in closure.
-	 * Then process labels uses that number to create the absolute addr.
-	 */
 	std::set<std::string> used;
 	get_variables(used);
 	int captured = 0;
@@ -390,28 +367,28 @@ void ClosureExp::emit(std::map<std::string, int> &context,
 	 *
 	 * instr
 	 * 		new_closure
-	 * 		capture vars [0 .. n]
+	 * 		capture vars
 	 * 		jmp over closure
 	 * 		closure_start (label)
+	 *
+	 * 	Once compiled, process labels will calculate the absolute address using the
+	 * 	captuer count.
 	 */
-	int clos_addr_abs = is.size()+3+ captured; //TODO: consider 3
-
-	//is.push_back( new_closure(clos_addr_abs) );
 	is.push_back( new_closure(captured) );
 
 	for(auto s : used){
-		if(context.count(s) > 0){
-			int addr = context[s];
-			is.push_back( closure_capture(addr) );
-		}
+		if(context.count(s) == 0) continue;
+
+		int addr = context[s];
+		is.push_back( closure_capture(addr) );
 	}
+
 	/*
 	 * Now we need to make a new context containing the
 	 * args and local variables stack locations.
 	 *
 	 * Captured variables are added last.
 	 */
-
 	auto func_context = std::map<std::string, int>();
 	int stack_pos = 0;
 	for(auto arg : arguments){
@@ -421,11 +398,11 @@ void ClosureExp::emit(std::map<std::string, int> &context,
 
 	// adding captured vars to context
 	for(auto s : used){
-		if(context.count(s) > 0){
-			int addr = context[s];
-			func_context[s] = stack_pos;
-			stack_pos++;
-		}
+		if(context.count(s) == 0) continue;
+
+		int addr = context[s];
+		func_context[s] = stack_pos;
+		stack_pos++;
 	}
 
 	auto locals = std::vector<std::string>();
@@ -435,15 +412,6 @@ void ClosureExp::emit(std::map<std::string, int> &context,
 		stack_pos++;
 	}
 
-	// adding captured vars to context
-	//for(auto s : used){
-	//	if(context.count(s) > 0){
-	//		int addr = context[s];
-	//		func_context[s] = stack_pos;
-	//		stack_pos++;
-	//	}
-	//}
-	
 	auto function_is = std::vector<Instruction>();
 	function_is.push_back( label("anon_function") ); // push label
 	//push space on stack for local variables
@@ -455,9 +423,7 @@ void ClosureExp::emit(std::map<std::string, int> &context,
 
 	is.push_back( jmp( function_is.size()+1 ) ); // jump over function body
 
-	for( auto instr : function_is){
-		is.push_back(instr);
-	}
+	is.insert(is.begin(), function_is.begin(), function_is.end());
 }
 
 
@@ -597,10 +563,8 @@ void IfStmt::find_DeclareStmts(std::vector<std::string> &context){
 
 void IfStmt::emit(std::map<std::string, int> &context,
 				  std::vector<Instruction> &is){
-	/*
-	 * We need to know the size of the body so
-	 * that we can jmp over it.
-	 */
+	 // We need to know the size of the body so
+	 // that we can jmp over it.
 	auto if_is = std::vector<Instruction>();
 	auto else_is = std::vector<Instruction>();
 	this->_if->emit(context, if_is);
@@ -610,18 +574,13 @@ void IfStmt::emit(std::map<std::string, int> &context,
 	if(if_size == 0) if_size = 1;
 
 	int else_size = else_is.size();
-	//if(else_size == 0) else_size = 1;
 
 	this->exp->emit(context, is);
 	is.push_back( jmp_cnd(2) ); // jump into _if
 	is.push_back( jmp(if_size+2) ); // jump past the _if into _else
-	for(auto instr : if_is){
-		is.push_back(instr);
-	}
+	is.insert(is.begin(), if_is.begin(), if_is.end());
 	is.push_back( jmp(else_size+1) ); //jump past else 
-	for(auto instr : else_is){
-		is.push_back(instr);
-	}
+	is.insert(is.begin(), else_is.begin(), else_is.end());
 }
 
 void IfStmt::get_variables(std::set<std::string> &vars){
@@ -648,16 +607,12 @@ void WhileStmt::emit(std::map<std::string, int> &context,
 	exp->emit(context, cnd_is);
 	body->emit(context, body_is);
 
-	for(auto instr : cnd_is){
-		is.push_back(instr);
-	}
+	is.insert(is.begin(), cnd_is.begin(), cnd_is.end());
 
 	is.push_back( jmp_cnd(2) );
 	is.push_back( jmp(body_is.size() + 2) );
 
-	for(auto instr : body_is){
-		is.push_back(instr);
-	}
+	is.insert(is.begin(), body_is.begin(), body_is.end());
 
 	int total_size = 2 + cnd_is.size() + body_is.size();
 	is.push_back( jmp(-total_size) );

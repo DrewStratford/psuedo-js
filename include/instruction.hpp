@@ -153,7 +153,7 @@ const ParamType instruction_types[]{
 	None, None, None, None,
 	String,
 	Int, Int, String, Int, None,
-	None, None, None, None, String,
+	None, None, Int, None, String,
 	Int,
 	Float, Int, Int, Int,
 	String, String,
