@@ -423,7 +423,7 @@ void ClosureExp::emit(CompilationState& state, ScopeInfo &context,
 
 	is.push_back( jmp( function_is.size()+1 ) ); // jump over function body
 
-	is.insert(is.begin(), function_is.begin(), function_is.end());
+	is.insert(is.end(), function_is.begin(), function_is.end());
 }
 
 
@@ -578,9 +578,9 @@ void IfStmt::emit(CompilationState& state, ScopeInfo &context,
 	this->exp->emit(state, context, is);
 	is.push_back( jmp_cnd(2) ); // jump into _if
 	is.push_back( jmp(if_size+2) ); // jump past the _if into _else
-	is.insert(is.begin(), if_is.begin(), if_is.end());
+	is.insert(is.end(), if_is.begin(), if_is.end());
 	is.push_back( jmp(else_size+1) ); //jump past else 
-	is.insert(is.begin(), else_is.begin(), else_is.end());
+	is.insert(is.end(), else_is.begin(), else_is.end());
 }
 
 void IfStmt::get_variables(std::set<std::string> &vars){
@@ -607,12 +607,12 @@ void WhileStmt::emit(CompilationState& state, ScopeInfo &context,
 	exp->emit(state, context, cnd_is);
 	body->emit(state, context, body_is);
 
-	is.insert(is.begin(), cnd_is.begin(), cnd_is.end());
+	is.insert(is.end(), cnd_is.begin(), cnd_is.end());
 
 	is.push_back( jmp_cnd(2) );
 	is.push_back( jmp(body_is.size() + 2) );
 
-	is.insert(is.begin(), body_is.begin(), body_is.end());
+	is.insert(is.end(), body_is.begin(), body_is.end());
 
 	int total_size = 2 + cnd_is.size() + body_is.size();
 	is.push_back( jmp(-total_size) );
