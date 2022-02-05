@@ -471,6 +471,7 @@ void AssignStmt::emit(CompilationState& state, ScopeInfo &context,
 
 void AssignStmt::get_variables(std::set<std::string> &vars){
 	exp->get_variables(vars);
+	vars.insert(var);
 }
 
 BlockStmt::BlockStmt(std::vector<StmtPtr> inits){
