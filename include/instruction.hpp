@@ -62,7 +62,9 @@ enum OpCode{
 	// Foreign function interface
 	FFI_LOAD,	//loads lib
 	FFI_CALL_SYM,	//calls based on sym
-	FFI_CALL		//calls based on known func address
+	FFI_CALL,		//calls based on known func address
+
+	CLOS_LBL	// Compile time helper storing address of function.
 };
 
 
@@ -100,7 +102,7 @@ Instruction jmp(std::string);
 Instruction new_obj(void);
 Instruction new_vec(void);
 Instruction new_unit(void);
-Instruction new_closure(int);
+Instruction new_closure(std::string);
 Instruction new_string(const char*);
 
 Instruction closure_capture(int);
@@ -150,7 +152,8 @@ const std::string instruction_names[]{
 	"LOOKUP_V", "INSERT_V",
 	"ADD", "MIN", "MUL", "DIV", "MOD",
 	"EQ", "LT", "LTE", "GT", "GTE",
-	"FFI_LOAD", "FFI_CALL_SYM", "FFI_CALL"
+	"FFI_LOAD", "FFI_CALL_SYM", "FFI_CALL",
+	"CLOS_LBL"
 };
 const ParamType instruction_types[]{
 	None, None, None, None,
@@ -164,6 +167,7 @@ const ParamType instruction_types[]{
 	None, None,
 	None, None, None, None, None,
 	None, None, None, None, None,
-	String, String, Ptr
+	String, String, Ptr,
+	String
 };
 #endif

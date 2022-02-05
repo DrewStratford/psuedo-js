@@ -331,10 +331,10 @@ Instruction new_string(const char* str){
 	return out;
 }
 
-Instruction new_closure(int ip){
+Instruction new_closure(std::string str){
 	Instruction out;
-	out.op = NEW_CLOS;
-	out.i = ip;
+	out.op = CLOS_LBL;
+	out.str = strdup(str.c_str());
 	return out;
 }
 
@@ -465,15 +465,14 @@ void process_labels(std::vector<Instruction> &ins){
 		}
 	}
 
-	// changes closures from captured count -> absolute addr
-	// Note each closure's op codes are compiled + 3 + captured_vars
-	// from the new_closure.
+	// changes clos_lbl to the appropriate closure
 	for(int ins_ptr = 0; ins_ptr < ins.size(); ins_ptr++){
 		Instruction instr = ins[ins_ptr];
-		if(instr.op == NEW_CLOS){
-			int absolute = ins_ptr + 2 + instr.index;
+		if(instr.op == CLOS_LBL){
+			int absolute = lookup_table[instr.str];
+			free(instr.str);
 			ins[ins_ptr].op = NEW_CLOS;
-			ins[ins_ptr].index = absolute;
+			ins[ins_ptr].i = absolute;
 		}
 	}
 }
@@ -481,10 +480,10 @@ void process_labels(std::vector<Instruction> &ins){
 std::ostream& operator<<(std::ostream& os, const Instruction& i){
 	os << instruction_names[i.op];
 	switch(instruction_types[i.op]){
-		case Int: os << ": " << i.i; break;
-		case Float: os << ": " << i.f; break;
-		case String: os << ": " << i.str; break;
-		case Ptr: os << ": " << i.ptr; break;
+		case Int: os << ":\t" << i.i; break;
+		case Float: os << ":\t" << i.f; break;
+		case String: os << ":\t" << i.str; break;
+		case Ptr: os << ":\t" << i.ptr; break;
 		default: break;
 	}
 

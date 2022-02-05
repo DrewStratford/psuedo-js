@@ -103,7 +103,7 @@ class ClosureExp : public Expression{
 
 	public:
 	ClosureExp(std::initializer_list<std::string>, std::shared_ptr<BlockStmt>);
-	ClosureExp(std::vector<std::string>, std::shared_ptr<BlockStmt>);
+	ClosureExp(std::vector<std::string> const&, std::shared_ptr<BlockStmt>);
 	void emit(CompilationState&, ScopeInfo&, std::vector<Instruction>&);
 	void get_variables(std::set<std::string>&);
 };

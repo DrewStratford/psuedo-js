@@ -322,23 +322,14 @@ void GetFieldExp::get_variables(std::set<std::string> &vars){
 	accessor->get_variables(vars);
 }
 
-ClosureExp::ClosureExp(
-				std::vector<std::string> args,
-				std::shared_ptr<BlockStmt> body){
+ClosureExp::ClosureExp(std::vector<std::string> const& args, std::shared_ptr<BlockStmt> body){
 
-	for(auto arg : args){
-		arguments.push_back(arg);
-	}
+	arguments.insert(arguments.begin(), args.begin(), args.end());
 	this->body = body;
 }
 
-ClosureExp::ClosureExp(
-				std::initializer_list<std::string> args,
-				std::shared_ptr<BlockStmt> body){
-
-	for(auto arg : args){
-		arguments.push_back(arg);
-	}
+ClosureExp::ClosureExp(std::initializer_list<std::string> args, std::shared_ptr<BlockStmt> body){
+	arguments.insert(arguments.begin(), args.begin(), args.end());
 	this->body = body;
 }
 
@@ -347,60 +338,35 @@ void ClosureExp::get_variables(std::set<std::string> &vars){
 	body->get_variables(vars);
 }
 
-void ClosureExp::emit(CompilationState& state, ScopeInfo &context,
-						std::vector<Instruction> &is){
+void ClosureExp::emit(CompilationState& state, ScopeInfo& context, std::vector<Instruction>& is){
+	auto anon_i = std::to_string(state.new_anon_function());
 	std::set<std::string> used;
 	get_variables(used);
-	int captured = 0;
 
-	for(auto s : used){
-		if(context.count(s) > 0){
-			std::cout << s << std::endl;
-			captured++;
-		}
-	}
+	// Create closure object
+	is.push_back( new_closure(".anon.function."+anon_i) );
 
-	/*
-	 * Set up the closure creation
-	 * we compile the actual closure
-	 * just after the closure create
-	 *
-	 * instr
-	 * 		new_closure
-	 * 		capture vars
-	 * 		jmp over closure
-	 * 		closure_start (label)
-	 *
-	 * 	Once compiled, process labels will calculate the absolute address using the
-	 * 	captuer count.
-	 */
-	is.push_back( new_closure(captured) );
-
-	for(auto s : used){
-		if(context.count(s) == 0) continue;
-
-		int addr = context[s];
-		is.push_back( closure_capture(addr) );
-	}
-
-	/*
-	 * Now we need to make a new context containing the
-	 * args and local variables stack locations.
-	 *
-	 * Captured variables are added last.
-	 */
+	// We'll need a new context with args, captured variables and then local variables.
 	auto func_context = ScopeInfo();
+
 	int stack_pos = 0;
 	for(auto arg : arguments){
 		func_context[arg] = stack_pos;
 		stack_pos++;
 	}
 
-	// adding captured vars to context
+	// Variables are captured if they are used, not shadowed in the new context
+	// and appear in the surrounding context.
+	// TODO: shadowing
 	for(auto s : used){
 		if(context.count(s) == 0) continue;
 
 		int addr = context[s];
+
+		// add capture value to closure object
+		is.push_back( closure_capture(addr) );
+
+		// add position to new context
 		func_context[s] = stack_pos;
 		stack_pos++;
 	}
@@ -412,18 +378,12 @@ void ClosureExp::emit(CompilationState& state, ScopeInfo &context,
 		stack_pos++;
 	}
 
-	auto function_is = std::vector<Instruction>();
-	function_is.push_back( label("anon_function") ); // push label
-	//push space on stack for local variables
-	for(auto _ : locals){
-		function_is.push_back( new_obj() ); // push label
-	}
-
-	body->emit(state, func_context, function_is);
-
-	is.push_back( jmp( function_is.size()+1 ) ); // jump over function body
-
-	is.insert(is.end(), function_is.begin(), function_is.end());
+	// Compile the function
+	is.push_back( jmp_lbl(".anon.function.end."+anon_i) ); // jump over function body
+	is.push_back( label(".anon.function."+anon_i) );
+	is.insert(is.end(), locals.size(), new_obj()); // make space for locals
+	body->emit(state, func_context, is);
+	is.push_back( label(".anon.function.end."+anon_i) ); // push label
 }
 
 
@@ -656,8 +616,7 @@ void FunctionStmt::emit(CompilationState& state, ScopeInfo& context, std::vector
 	is.push_back( label(name) ); // push label
 
 	//push space on stack for local variables
-	for(auto _ : locals)
-		is.push_back( new_obj() ); // push label
+	is.insert(is.end(), locals.size(), new_obj());
 
 	body->emit(state, func_context, is);
 	is.push_back( label("."+name+".end") );
