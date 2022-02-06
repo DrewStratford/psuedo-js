@@ -14,8 +14,14 @@ class CompilationState{
 		int if_statements { 0 };
 		int anon_functions { 0 };
 		std::map<std::string, int> label_map;
+		std::vector<int> loop_idxs;
 	public:
-		int new_loop() { return while_loops++; }
+		int get_loop() { return *loop_idxs.end(); }
+		int new_loop() {
+			loop_idxs.push_back(while_loops++);
+			return get_loop();
+		}
+		void end_loop() { loop_idxs.pop_back(); }
 		int new_if() { return if_statements++; }
 		int new_anon_function() { return anon_functions++; }
 		void set_label(std::string label, int location) { label_map[label] = location; }
@@ -333,6 +339,13 @@ class LoadFFIStmt : public Statement{
 
 	public:
 	LoadFFIStmt(std::string);
+	void emit(CompilationState&, ScopeInfo&, std::vector<Instruction>&);
+};
+
+class ContinueStmt : public Statement{
+	void emit(CompilationState&, ScopeInfo&, std::vector<Instruction>&);
+};
+class BreakStmt : public Statement{
 	void emit(CompilationState&, ScopeInfo&, std::vector<Instruction>&);
 };
 

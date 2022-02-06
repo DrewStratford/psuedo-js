@@ -569,7 +569,6 @@ StmtPtr parse_statement(ParseInfo *p);
 
 StmtPtr parse_return(ParseInfo *p){
 	ParseInfo working = *p;
-	std::string id;
 	ExprPtr exp = nullptr;
 
 	if(working.match("return") &&
@@ -580,6 +579,26 @@ StmtPtr parse_return(ParseInfo *p){
 		return MAKE_STMT(new ReturnStmt(exp));
 	  }
 
+	  return nullptr;
+}
+
+StmtPtr parse_break(ParseInfo *p){
+	ParseInfo working = *p;
+
+	if(working.match("break") && working.match(";")){
+		*p = working;
+		return MAKE_STMT(new BreakStmt());
+	  }
+	  return nullptr;
+}
+
+StmtPtr parse_continue(ParseInfo *p){
+	ParseInfo working = *p;
+
+	if(working.match("continue") && working.match(";")){
+		*p = working;
+		return MAKE_STMT(new ContinueStmt());
+	  }
 	  return nullptr;
 }
 
@@ -765,6 +784,8 @@ StmtPtr parse_statement(ParseInfo *p){
 	if(out = parse_if(p)) return out;
 	if(out = parse_while(p)) return out;
 	if(out = parse_return(p)) return out;
+	if(out = parse_break(p)) return out;
+	if(out = parse_continue(p)) return out;
 	if(out = parse_setfield(p)) return out;
 	if(out = parse_let(p)) return out;
 	if(out = parse_assign(p)) return out;

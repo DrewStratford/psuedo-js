@@ -1,4 +1,5 @@
 #include "ast.hpp"
+#include "instruction.hpp"
 #include <iostream>
 
 
@@ -555,15 +556,17 @@ void WhileStmt::find_DeclareStmts(std::vector<std::string> &context){
 }
 
 void WhileStmt::emit(CompilationState& state, ScopeInfo &context, std::vector<Instruction> &is){
-	auto while_i = std::to_string(state.new_if());
+	auto while_id = std::to_string(state.new_loop());
 
-	is.push_back( label(".while.start."+while_i) );
+	is.push_back( label(".while.start."+while_id) );
 	exp->emit(state, context, is);
 	is.push_back( jmp_cnd(2) );
-	is.push_back( jmp_lbl(".while.end."+while_i) );
+	is.push_back( jmp_lbl(".while.end."+while_id) );
 	body->emit(state, context, is);
-	is.push_back( jmp_lbl(".while.start."+while_i) );
-	is.push_back( label(".while.end."+while_i) );
+	is.push_back( jmp_lbl(".while.start."+while_id) );
+	is.push_back( label(".while.end."+while_id) );
+
+	state.end_loop();
 
 }
 
@@ -648,4 +651,14 @@ LoadFFIStmt::LoadFFIStmt(std::string name){
 void LoadFFIStmt::emit(CompilationState& state, ScopeInfo &context,
 						std::vector<Instruction> &is){
 	is.push_back( ffi_load(ffi_name.c_str()) );
+}
+
+void ContinueStmt::emit(CompilationState& state, ScopeInfo& context, std::vector<Instruction>& is){
+	auto loop_id = std::to_string(state.get_loop());
+	is.push_back( jmp_lbl(".while.start."+loop_id) );
+}
+
+void BreakStmt::emit(CompilationState& state, ScopeInfo& context, std::vector<Instruction>& is){
+	auto loop_id = std::to_string(state.get_loop());
+	is.push_back( jmp_lbl(".while.end."+loop_id) );
 }
